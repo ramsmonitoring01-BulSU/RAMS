@@ -95,7 +95,7 @@ export default function MapWidget({ gateData, activeGate, setActiveGate }) {
                                     click: () => setActiveGate(gate.id),
                                 }}
                             >
-                                <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={isActive}>
+                                <Tooltip direction="top" offset={[0, -10]} opacity={1} >
                                     <div className="text-center font-sans">
                                         <div className="font-bold text-slate-800">{gate.name}</div>
                                         <div className="text-[10px] text-slate-500">{gate.level}cm</div>
