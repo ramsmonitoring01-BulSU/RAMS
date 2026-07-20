@@ -1,13 +1,13 @@
 import React from 'react';
-import { X, CheckCheck, AlertTriangle, AlertCircle } from 'lucide-react';
+import { X, CheckCheck, AlertTriangle, AlertCircle, Check } from 'lucide-react';
 import { useNotification } from './NotificationContext';
 
 export default function NotificationDrawer() {
-    const { isDrawerOpen, closeDrawer, notifications, markAllAsRead, unreadCount } = useNotification();
+    const { isDrawerOpen, closeDrawer, notifications, markAllAsRead, markAsRead, unreadCount } = useNotification();
 
     return (
         <>
-            {/* BACKDROP OVERLAY: Darkens the rest of the app when open */}
+            {/* BACKDROP OVERLAY */}
             {isDrawerOpen && (
                 <div
                     className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 transition-opacity"
@@ -60,26 +60,38 @@ export default function NotificationDrawer() {
                             <div
                                 key={note.id}
                                 className={`p-4 mb-2 rounded-xl border-l-4 transition-colors ${note.isRead
-                                        ? 'bg-transparent border-transparent opacity-60'
-                                        : 'bg-slate-50 dark:bg-slate-800/50 border-rose-500 shadow-sm'
+                                    ? 'bg-transparent border-transparent opacity-60'
+                                    : 'bg-slate-50 dark:bg-slate-800/50 border-rose-500 shadow-sm'
                                     }`}
                             >
                                 <div className="flex gap-3">
-                                    {/* Icon logic based on severity */}
                                     <div className="mt-0.5 shrink-0">
                                         {note.type === 'critical'
                                             ? <AlertCircle size={18} className="text-rose-500" />
                                             : <AlertTriangle size={18} className="text-amber-500" />
                                         }
                                     </div>
-                                    <div>
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h4 className={`text-sm font-bold ${note.isRead ? 'text-slate-600 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start mb-1 gap-2">
+                                            <h4 className={`text-sm font-bold truncate ${note.isRead ? 'text-slate-600 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
                                                 {note.title}
                                             </h4>
-                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-2 whitespace-nowrap">
-                                                {note.time}
-                                            </span>
+
+                                            {/* FIX: Added shrink-0 so it never gets compressed, and styled the button to stand out */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                                    {note.time}
+                                                </span>
+                                                {!note.isRead && (
+                                                    <button
+                                                        onClick={() => markAsRead(note.id)}
+                                                        className="flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-[#2563EB] dark:hover:text-brand-light hover:border-[#2563EB] dark:hover:border-brand-light transition-colors p-1 rounded-md shadow-sm"
+                                                        title="Acknowledge alert"
+                                                    >
+                                                        <Check size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
                                             {note.message}

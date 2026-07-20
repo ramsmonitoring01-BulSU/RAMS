@@ -1,20 +1,57 @@
-import React from 'react';
+// 1. Import useEffect and useRef
+import React, { useEffect, useRef } from 'react';
 import { Menu, Bell, Activity, Waves, Route, RefreshCw } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useNotification } from './NotificationContext';
 
 export default function TopHeader({ setIsSidebarOpen, gateData }) {
-    const { toggleDrawer, unreadCount } = useNotification();
+    // 2. Destructure our new addNotification function
+    const { toggleDrawer, unreadCount, addNotification } = useNotification();
+
+    // 3. Keep track of what the gate statuses were previously
+    const prevStatusRef = useRef({});
 
     // ========================================================================
-    // DYNAMIC METRICS CALCULATION (Powered by Live Supabase Data)
+    // LIVE ALERT ENGINE
+    // Monitors the telemetry stream and fires notifications on status changes
+    // ========================================================================
+    useEffect(() => {
+        if (!gateData) return;
+
+        Object.values(gateData).forEach(gate => {
+            const prevStatus = prevStatusRef.current[gate.id];
+
+            // If the status has changed to a dangerous state since the last render
+            if (prevStatus && prevStatus !== gate.status) {
+
+                if (gate.status === 'Warning') {
+                    addNotification({
+                        gateId: gate.id,
+                        type: 'warning',
+                        title: `${gate.name} Water Level Rising`,
+                        message: `Depth has reached ${gate.level}cm. Status upgraded to Warning.`
+                    });
+                }
+                else if (gate.status === 'Impassable') {
+                    addNotification({
+                        gateId: gate.id,
+                        type: 'critical',
+                        title: `${gate.name} is Impassable!`,
+                        message: `Critical depth at ${gate.level}cm. Exceeds safe clearance for vehicles.`
+                    });
+                }
+            }
+
+            // Save current status for the next comparison
+            prevStatusRef.current[gate.id] = gate.status;
+        });
+    }, [gateData, addNotification]); // Runs every time Supabase pushes new gateData
+
+    // ========================================================================
+    // DYNAMIC METRICS CALCULATION
     // ========================================================================
     const gates = gateData ? Object.values(gateData) : [];
-
-    // Find the highest water level among all gates
     const maxDepth = gates.length > 0 ? Math.max(...gates.map(g => g.level)) : 0;
-
-    // Count how many gates are currently "Safe"
     const safeCount = gates.filter(g => g.status === 'Safe').length;
     const totalGates = gates.length;
 

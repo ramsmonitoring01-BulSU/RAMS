@@ -1,11 +1,18 @@
 import React from 'react';
 import { Map } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
+// 1. Swapped CircleMarker for standard Marker, and imported L for custom icons
+import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 export default function MapWidget({ gateData, activeGate, setActiveGate }) {
     const mapCenter = [14.8565, 120.8140];
     const gates = Object.values(gateData);
+
+    // Invisible boundary box to lock the camera to the campus
+    const southWest = [14.8520, 120.8080];
+    const northEast = [14.8620, 120.8200];
+    const campusBounds = [southWest, northEast];
 
     return (
         <div className="lg:col-span-8 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col min-h-[500px] h-full transition-colors duration-300">
@@ -25,6 +32,9 @@ export default function MapWidget({ gateData, activeGate, setActiveGate }) {
                 <MapContainer
                     center={mapCenter}
                     zoom={17}
+                    minZoom={16}
+                    maxBounds={campusBounds}
+                    maxBoundsViscosity={1.0}
                     style={{ height: '100%', width: '100%' }}
                     zoomControl={false}
                 >
@@ -36,32 +46,51 @@ export default function MapWidget({ gateData, activeGate, setActiveGate }) {
                     {gates.map((gate) => {
                         const isActive = activeGate === gate.id;
 
-                        // 1. Determine Color and Alert Status
-                        let nodeColor = '#10B981'; // Green (Safe)
-                        let isAlert = false; // Flag to trigger the pulse animation
+                        // 2. Dynamic Tailwind styling for the custom HTML markers
+                        let dotColor = 'bg-[#10B981]'; // Green
+                        let ringColor = 'bg-[#10B981]';
+                        let isAlert = false;
 
                         if (gate.status === 'Warning') {
-                            nodeColor = '#F59E0B'; // Amber
+                            dotColor = 'bg-[#F59E0B]'; // Amber
+                            ringColor = 'bg-[#F59E0B]';
                             isAlert = true;
-                        }
-                        if (gate.status === 'Impassable') {
-                            nodeColor = '#F43F5E'; // Red
+                        } else if (gate.status === 'Impassable') {
+                            dotColor = 'bg-[#F43F5E]'; // Red
+                            ringColor = 'bg-[#F43F5E]';
                             isAlert = true;
                         }
 
+                        // Make the active gate visually distinct if it is not in an alert state
+                        if (isActive && !isAlert) {
+                            dotColor = 'bg-[#2563EB]'; // Blue
+                            ringColor = 'bg-[#2563EB]';
+                        }
+
+                        // Alerts always pulse. Active safe gates also pulse to show they are selected.
+                        const shouldPulse = isAlert || isActive;
+
+                        // 3. The raw HTML string injected into the map
+                        const markerHtml = `
+                            <div class="relative flex items-center justify-center w-8 h-8 cursor-pointer">
+                                ${shouldPulse ? `<span class="absolute inline-flex h-full w-full rounded-full ${ringColor} opacity-50 animate-ping"></span>` : ''}
+                                <span class="relative inline-flex rounded-full ${isActive ? 'h-5 w-5' : 'h-4 w-4'} ${dotColor} border-2 border-white shadow-[0_2px_4px_rgba(0,0,0,0.3)] transition-all duration-300"></span>
+                            </div>
+                        `;
+
+                        // 4. Create the Leaflet DivIcon
+                        const customIcon = L.divIcon({
+                            className: '', // Setting this to empty removes the default Leaflet white square background
+                            html: markerHtml,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16], // Centers the icon perfectly on the coordinates
+                        });
+
                         return (
-                            <CircleMarker
+                            <Marker
                                 key={gate.id}
-                                center={[gate.lat, gate.lng]}
-                                radius={isActive ? 12 : 8}
-                                pathOptions={{
-                                    color: isActive ? '#2563EB' : nodeColor,
-                                    fillColor: nodeColor,
-                                    fillOpacity: 0.8,
-                                    weight: isActive ? 4 : 2,
-                                    // 2. Inject Tailwind's pulse class directly into the Leaflet SVG if it's an alert
-                                    className: isAlert ? 'animate-pulse' : 'transition-all duration-300'
-                                }}
+                                position={[gate.lat, gate.lng]}
+                                icon={customIcon}
                                 eventHandlers={{
                                     click: () => setActiveGate(gate.id),
                                 }}
@@ -72,7 +101,7 @@ export default function MapWidget({ gateData, activeGate, setActiveGate }) {
                                         <div className="text-[10px] text-slate-500">{gate.level}cm</div>
                                     </div>
                                 </Tooltip>
-                            </CircleMarker>
+                            </Marker>
                         );
                     })}
                 </MapContainer>
