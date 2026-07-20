@@ -7,30 +7,24 @@
 import React from 'react';
 
 export default function VehiclePlaceholder({ label, maxDepth, currentLevel }) {
-    // LOGIC: If the current water level is strictly greater than the vehicle's max depth, it is submerged.
     const isSubmerged = currentLevel > maxDepth;
 
     return (
-        <div className={`p-2 rounded-lg border-2 flex flex-col justify-between h-full transition-colors font-sans ${
-            // STYLE LOGIC: If submerged, use red colors. If safe, use green colors.
-            // Non-technical users: You can change 'rose' to 'red' or 'emerald' to 'green' if you prefer standard tailwind colors.
-            isSubmerged
-                ? 'bg-rose-50 border-rose-200 text-rose-700'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+        <div className={`p-2 rounded-lg border-2 flex flex-col justify-between h-full transition-colors font-sans ${isSubmerged
+                ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400'
+                : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400'
             }`}>
 
-            {/* TOP SECTION: Vehicle Name and Limit Label */}
             <div>
                 <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-                    {label} {/* This prints the name, like "E-Trike" */}
+                    {label}
                 </div>
                 <div className="text-[9px] sm:text-[10px] opacity-70 font-medium tracking-wide">
-                    Limit: {maxDepth}cm {/* This prints the limit, like "Limit: 20cm" */}
+                    Limit: {maxDepth}cm
                 </div>
             </div>
 
-            {/* BOTTOM SECTION: PASS or STOP text */}
-            <div className={`text-xs sm:text-sm font-display font-bold mt-2 ${isSubmerged ? 'text-rose-600' : 'text-emerald-600'
+            <div className={`text-xs sm:text-sm font-display font-bold mt-2 transition-colors ${isSubmerged ? 'text-rose-600 dark:text-rose-500' : 'text-emerald-600 dark:text-emerald-500'
                 }`}>
                 {isSubmerged ? 'STOP' : 'PASS'}
             </div>

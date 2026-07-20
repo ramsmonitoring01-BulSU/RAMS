@@ -1,6 +1,3 @@
-@import "tailwindcss";
-@theme {
-  --font-sans: "Inter", sans-serif;
-  --font-display: "Inter Tight", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
