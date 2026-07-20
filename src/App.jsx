@@ -1,80 +1,85 @@
 import React, { useState } from 'react';
 
-// Import the Theme Provider
-import { ThemeProvider } from './components/ThemeContext';
-
-// Import all the separated components
+// === IMPORT LAYOUT COMPONENTS ===
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
-import SummaryCards from './components/SummaryCards';
 import MapWidget from './components/MapWidget';
+//import SummaryCards from './components/SummaryCards';
 import GateControlPanel from './components/GateControlPanel';
 import GateDetails from './components/GateDetails';
 
-import { useGateTelemetry } from './hooks/useGateTelemetry';
-
-// Import the central configuration data
-import { gateData } from './data/mockData';
+// === IMPORT CONTEXT & HOOKS ===
+import { ThemeProvider } from './components/ThemeContext';
+import { NotificationProvider } from './components/NotificationContext';
+import NotificationDrawer from './components/NotificationDrawer';
+import { useTelemetry } from './hooks/useTelemetry';
 
 export default function App() {
-  // Global State for the Dashboard
-  const [activeGate, setActiveGate] = useState(2);
+  // UI Layout State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
-  // FETCH HARDWARE DATA VIA HOOK
-  const { telemetry, isLive } = useGateTelemetry();
+  // Interactive State
+  const [activeGate, setActiveGate] = useState(1);
+
+  // Fetch data from our custom hook (currently mockData, soon to be Supabase WebSockets)
+  const { gateData } = useTelemetry();
 
   return (
-    // 1. Wrap the entire app in the ThemeProvider
     <ThemeProvider>
-      {/* 2. Updated the root div with dark mode dynamic classes and transition */}
-      <div className="bg-surface-light dark:bg-surface-dark font-sans text-slate-900 dark:text-white transition-colors duration-300 antialiased flex h-screen overflow-hidden selection:bg-brand-light">
+      <NotificationProvider>
+        <div className="flex h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 overflow-hidden font-sans">
 
-        {/* SIDEBAR COMPONENT */}
-        <Sidebar
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          isDesktopCollapsed={isDesktopCollapsed}
-          setIsDesktopCollapsed={setIsDesktopCollapsed}
-        />
+          {/* LEFT NAVIGATION */}
+          <Sidebar
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            isDesktopCollapsed={isDesktopCollapsed}
+            setIsDesktopCollapsed={setIsDesktopCollapsed}
+          />
 
-        {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+          {/* MAIN WORKSPACE */}
+          <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
 
-          {/* TOP HEADER COMPONENT */}
-          <TopHeader setIsSidebarOpen={setIsSidebarOpen} />
+            {/* TOP NAVIGATION & CONTROLS */}
+            <TopHeader setIsSidebarOpen={setIsSidebarOpen} gateData={gateData} />
 
-          {/* WORKSPACE CANVAS */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+            {/* SLIDE-OUT NOTIFICATIONS */}
+            <NotificationDrawer />
 
-            {/* Main Grid: Map on the left (8 cols), Controls on the right (4 cols) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 min-h-[500px] h-full">
+            {/* DASHBOARD GRID */}
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-              {/* LEFT: Expanded Map View */}
-              <MapWidget />
-
-              {/* RIGHT: Master Control Column */}
-              <div className="lg:col-span-4 flex flex-col gap-5 lg:gap-6">
-
-                <SummaryCards />
-
-                <GateControlPanel
+                {/* Left Side: 8 Columns for the Interactive Map */}
+                <MapWidget
                   gateData={gateData}
                   activeGate={activeGate}
                   setActiveGate={setActiveGate}
                 />
 
-                <GateDetails
-                  currentGate={gateData[activeGate]}
-                />
+                {/* Right Side: 4 Columns for Metrics & Controls */}
+                <div className="lg:col-span-4 flex flex-col gap-6">
+                  
+
+                  <GateControlPanel
+                    gateData={gateData}
+                    activeGate={activeGate}
+                    setActiveGate={setActiveGate}
+                  />
+
+                  {/* Fallback to render GateDetails only if gateData is successfully loaded */}
+                  {gateData && gateData[activeGate] && (
+                    <GateDetails currentGate={gateData[activeGate]} />
+                  )}
+                </div>
 
               </div>
+            </main>
+          </div>
 
-            </div>
-          </main>
         </div>
-      </div>
+      </NotificationProvider>
     </ThemeProvider>
   );
 }

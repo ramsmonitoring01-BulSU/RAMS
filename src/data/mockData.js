@@ -1,43 +1,11 @@
 // ============================================================================
-// RAMS DASHBOARD - CENTRAL DATA CONFIGURATION
-// ============================================================================
-// INSTRUCTIONS FOR NON-TECHNICAL USERS:
-// You can safely edit the text inside the quotation marks (e.g., "Gate 1") 
-// or the numbers (e.g., 12.4) to test how the dashboard looks with different data.
-// Do NOT delete the commas or the curly brackets { }.
+// MOCK DATA: Static fallback for UI testing before Supabase is connected.
+// Coordinates are pre-set for the Malolos campus layout.
 // ============================================================================
 
-export const gateData = {
-    1: {
-        name: "Gate 1",
-        location: "East Wing",
-        level: 0.0,           // Number: The current water depth in cm
-        status: "Passable",   // Text: Must be "Passable", "Warning", or "Impassable"
-        battery: "4.1V",      // Text: The battery voltage reading
-        ping: "2s ago"        // Text: When the sensor last sent data
-    },
-    2: {
-        name: "Gate 2",
-        location: "Main Entrance",
-        level: 12.4,
-        status: "Warning",
-        battery: "3.8V",
-        ping: "15s ago"
-    },
-    3: {
-        name: "Gate 3",
-        location: "West Wing",
-        level: 2.1,
-        status: "Passable",
-        battery: "4.2V",
-        ping: "5s ago"
-    },
-    4: {
-        name: "Gate 4",
-        location: "South Gate",
-        level: 46.5,
-        status: "Impassable",
-        battery: "4.0V",
-        ping: "1s ago"
-    }
+export const MOCK_GATE_DATA = {
+    1: { id: 1, name: 'Gate 1', location: 'Main Entrance', level: 0, battery: '12.4V', ping: '24ms', status: 'Safe', lat: 14.857244, lng: 120.812329 },
+    2: { id: 2, name: 'Gate 2', location: 'East Wing', level: 18, battery: '12.1V', ping: '32ms', status: 'Warning', lat: 14.857345, lng: 120.814304 },
+    3: { id: 3, name: 'Gate 3', location: 'West Annex', level: 38, battery: '11.8V', ping: '45ms', status: 'Impassable', lat: 14.858024, lng: 120.815839 },
+    4: { id: 4, name: 'Gate 4', location: 'Back Service', level: 5, battery: '12.5V', ping: '20ms', status: 'Safe', lat: 14.859670, lng: 120.814367 },
 };
