@@ -5,6 +5,9 @@ import { useNotification } from './NotificationContext';
 export default function NotificationDrawer() {
     const { isDrawerOpen, closeDrawer, notifications, markAllAsRead, markAsRead, unreadCount } = useNotification();
 
+    // FIX: Only extract notifications that have NOT been read
+    const visibleNotifications = notifications.filter(n => !n.isRead);
+
     return (
         <>
             {/* BACKDROP OVERLAY */}
@@ -51,18 +54,17 @@ export default function NotificationDrawer() {
 
                 {/* NOTIFICATIONS LIST */}
                 <div className="flex-1 overflow-y-auto p-2">
-                    {notifications.length === 0 ? (
+                    {/* Render from the filtered visible array instead of the raw array */}
+                    {visibleNotifications.length === 0 ? (
                         <div className="text-center text-slate-500 dark:text-slate-400 mt-10 text-sm font-medium">
                             No notifications right now.
                         </div>
                     ) : (
-                        notifications.map(note => (
+                        visibleNotifications.map(note => (
                             <div
                                 key={note.id}
-                                className={`p-4 mb-2 rounded-xl border-l-4 transition-colors ${note.isRead
-                                    ? 'bg-transparent border-transparent opacity-60'
-                                    : 'bg-slate-50 dark:bg-slate-800/50 border-rose-500 shadow-sm'
-                                    }`}
+                                // Removed the translucent styling since we only render active alerts now
+                                className="p-4 mb-2 rounded-xl border-l-4 transition-colors bg-slate-50 dark:bg-slate-800/50 border-rose-500 shadow-sm"
                             >
                                 <div className="flex gap-3">
                                     <div className="mt-0.5 shrink-0">
@@ -73,24 +75,21 @@ export default function NotificationDrawer() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start mb-1 gap-2">
-                                            <h4 className={`text-sm font-bold truncate ${note.isRead ? 'text-slate-600 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
+                                            <h4 className="text-sm font-bold truncate text-slate-900 dark:text-white">
                                                 {note.title}
                                             </h4>
 
-                                            {/* FIX: Added shrink-0 so it never gets compressed, and styled the button to stand out */}
                                             <div className="flex items-center gap-2 shrink-0">
                                                 <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
                                                     {note.time}
                                                 </span>
-                                                {!note.isRead && (
-                                                    <button
-                                                        onClick={() => markAsRead(note.id)}
-                                                        className="flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-[#2563EB] dark:hover:text-brand-light hover:border-[#2563EB] dark:hover:border-brand-light transition-colors p-1 rounded-md shadow-sm"
-                                                        title="Acknowledge alert"
-                                                    >
-                                                        <Check size={14} />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => markAsRead(note.id)}
+                                                    className="flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-[#2563EB] dark:hover:text-brand-light hover:border-[#2563EB] dark:hover:border-brand-light transition-colors p-1 rounded-md shadow-sm"
+                                                    title="Acknowledge alert"
+                                                >
+                                                    <Check size={14} />
+                                                </button>
                                             </div>
                                         </div>
                                         <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
