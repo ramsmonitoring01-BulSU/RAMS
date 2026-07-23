@@ -36,6 +36,26 @@ export const NotificationProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        localStorage.setItem('rams_notifications', JSON.stringify(notifications));
+    }, [notifications]);
+
+    const addNotification = (note) => {
+        setNotifications(prev => {
+            const isDuplicate = prev.some(n => !n.isRead && n.gateId === note.gateId && n.type === note.type);
+            if (isDuplicate) return prev;
+
+            const newNotification = {
+                id: Date.now() + Math.random(),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isRead: false,
+                ...note
+            };
+
+            return [newNotification, ...prev];
+        });
+    };
+
+    useEffect(() => {
         const sweepInterval = setInterval(() => {
             setNotifications(prevNotes => {
                 const now = Date.now();
