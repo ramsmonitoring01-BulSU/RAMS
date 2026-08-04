@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import VehicleClearance from './VehicleClearance';
 
-export default function GateDetails({ currentGate }) {
+export default function GateDetails({ currentGate, selectedVehicle, setSelectedVehicle }) {
     if (!currentGate) return null;
 
     let statusTheme = 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
@@ -19,7 +19,6 @@ export default function GateDetails({ currentGate }) {
     return (
         <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-5 transition-colors duration-300">
 
-            {/* Header Section */}
             <div className="flex justify-between items-start mb-6">
                 <div>
                     <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">
@@ -36,9 +35,12 @@ export default function GateDetails({ currentGate }) {
                 </div>
             </div>
 
-            {/* Expanded Visualizer */}
-            <VehicleClearance currentLevel={currentGate.level} />
-
+            {/* Passes Selection State to the Buttons */}
+            <VehicleClearance
+                currentLevel={currentGate.level}
+                selectedVehicle={selectedVehicle}
+                setSelectedVehicle={setSelectedVehicle}
+            />
         </div>
     );
 }

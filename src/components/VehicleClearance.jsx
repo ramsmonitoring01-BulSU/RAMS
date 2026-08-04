@@ -1,12 +1,12 @@
 import React from 'react';
 import { User, Car, Bike, Zap } from 'lucide-react';
 
-export default function VehicleClearance({ currentLevel }) {
+export default function VehicleClearance({ currentLevel, selectedVehicle, setSelectedVehicle }) {
     const vehicles = [
-        { id: 'human', label: 'Human', icon: User, threshold: 30, maxVisualHeight: 45 },
-        { id: 'ebike', label: 'E-Bike', icon: Zap, threshold: 10, maxVisualHeight: 25 },
-        { id: 'motorbike', label: 'Motorbike', icon: Bike, threshold: 20, maxVisualHeight: 40 },
-        { id: 'sedan', label: 'Sedan', icon: Car, threshold: 15, maxVisualHeight: 30 },
+        { id: 'human', label: 'Human', icon: User, threshold: 30, maxVisualHeight: 155 },
+        { id: 'ebike', label: 'E-Bike', icon: Zap, threshold: 10, maxVisualHeight: 140 },
+        { id: 'motorbike', label: 'Motorbike', icon: Bike, threshold: 20, maxVisualHeight: 90 },
+        { id: 'sedan', label: 'Sedan', icon: Car, threshold: 15, maxVisualHeight: 85 },
     ];
 
     return (
@@ -35,8 +35,9 @@ export default function VehicleClearance({ currentLevel }) {
                     const fillPercent = Math.min((currentLevel / v.maxVisualHeight) * 100, 100);
                     const thresholdPercent = (v.threshold / v.maxVisualHeight) * 100;
 
-                    // 1. We now define a master theme using 'text-[color]' and 'opacity'. 
-                    // The base div uses 'bg-current' and the SVG uses 'fill-current' so they merge perfectly.
+                    // Check if this specific vehicle is selected globally
+                    const isActive = selectedVehicle === v.id;
+
                     let waterTheme = 'text-[#3B82F6] opacity-40';
                     let iconColor = 'text-slate-600 dark:text-slate-300';
 
@@ -49,8 +50,14 @@ export default function VehicleClearance({ currentLevel }) {
                     }
 
                     return (
-                        <div key={v.id} className="flex flex-col items-center w-full">
-
+                        <button
+                            key={v.id}
+                            onClick={() => setSelectedVehicle(isActive ? null : v.id)}
+                            className={`flex flex-col items-center w-full transition-all duration-200 rounded-xl p-1.5 cursor-pointer ${isActive
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 shadow-md scale-105 ring-2 ring-blue-500'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/80'
+                                }`}
+                        >
                             <div className="relative w-full h-20 sm:h-24 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-inner flex items-center justify-center">
 
                                 {/* Danger Line */}
@@ -59,28 +66,21 @@ export default function VehicleClearance({ currentLevel }) {
                                     style={{ bottom: `${thresholdPercent}%` }}
                                 ></div>
 
-                                {/* Rising Water Base (Now uses bg-current to match the text color) */}
+                                {/* Rising Water Base */}
                                 <div
                                     className={`absolute bottom-0 left-0 right-0 w-full transition-all duration-1000 ease-in-out z-10 bg-current ${waterTheme}`}
                                     style={{ height: `${fillPercent}%` }}
                                 >
-                                    {/* 2. The Solid SVG Wave Layer */}
                                     {fillPercent > 0 && (
-                                        // bottom-[calc(100%-1px)] overlaps the base by exactly 1 pixel to prevent rendering seams
                                         <div className="absolute bottom-[calc(100%-1px)] left-0 w-[200%] h-[12px] pointer-events-none">
-
-                                            {/* Back Wave: Solid shape, but 40% opacity */}
                                             <div
                                                 className="absolute inset-0 opacity-40"
                                                 style={{ animation: 'wave-right 5s linear infinite' }}
                                             >
                                                 <svg viewBox="0 0 100 12" preserveAspectRatio="none" className="w-full h-full fill-current">
-                                                    {/* The path now traces the wave, then draws a box down to the bottom (L100,12 L0,12 Z) to create a solid fill */}
                                                     <path d="M0,5 Q12.5,0 25,5 T50,5 T75,5 T100,5 L100,12 L0,12 Z" />
                                                 </svg>
                                             </div>
-
-                                            {/* Front Wave: Solid shape, 100% opacity (which merges with the parent's opacity) */}
                                             <div
                                                 className="absolute inset-0"
                                                 style={{ animation: 'wave-left 3s linear infinite' }}
@@ -89,7 +89,6 @@ export default function VehicleClearance({ currentLevel }) {
                                                     <path d="M0,5 Q12.5,0 25,5 T50,5 T75,5 T100,5 L100,12 L0,12 Z" />
                                                 </svg>
                                             </div>
-
                                         </div>
                                     )}
                                 </div>
@@ -98,7 +97,6 @@ export default function VehicleClearance({ currentLevel }) {
                                 <div className="relative z-30 bg-white/50 dark:bg-slate-800/50 p-1.5 sm:p-2 rounded-md backdrop-blur-[2px]">
                                     <v.icon size={22} className={`transition-colors duration-300 ${iconColor} scale-90 sm:scale-100`} />
                                 </div>
-
                             </div>
 
                             {/* Labels */}
@@ -110,7 +108,7 @@ export default function VehicleClearance({ currentLevel }) {
                                     Max {v.threshold}cm
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     );
                 })}
             </div>
