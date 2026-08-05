@@ -8,12 +8,15 @@ import MapWidget from './components/MapWidget';
 import GateControlPanel from './components/GateControlPanel';
 import GateDetails from './components/GateDetails';
 import NodesPage from './components/NodesPage';
+import BuildingSelector from './components/BuildingSelector';
+import CompactVehicleSelector from './components/CompactVehicleSelector';
 
 // === IMPORT CONTEXT & HOOKS ===
 import { ThemeProvider } from './components/ThemeContext';
 import { NotificationProvider } from './components/NotificationContext';
 import NotificationDrawer from './components/NotificationDrawer';
 import { useTelemetry } from './hooks/useTelemetry';
+import { getBestExit } from './utils/exitCalculator';
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -21,42 +24,18 @@ export default function App() {
   const [activeView, setActiveView] = useState('dashboard');
 
   // === NEW SMART ROUTING STATES ===
-  const [originGate, setOriginGate] = useState(null);
-  const [destinationGate, setDestinationGate] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedGate, setSelectedGate] = useState(null);
 
   const { gateData } = useTelemetry();
 
-  // === TAP-TO-ROUTE TOGGLE LOGIC ===
-  const handleGateClick = (gateId) => {
-    // 1. Undo Origin Selection (If clicking the "From" gate again)
-    if (originGate === gateId) {
-      setOriginGate(destinationGate); // Shift destination to origin if one exists
-      setDestinationGate(null);
-      return;
-    }
-    // 2. Undo Destination Selection (If clicking the "To" gate again)
-    if (destinationGate === gateId) {
-      setDestinationGate(null);
-      return;
-    }
-    // 3. Set Origin
-    if (!originGate) {
-      setOriginGate(gateId);
-      return;
-    }
-    // 4. Set Destination
-    if (!destinationGate) {
-      setDestinationGate(gateId);
-      return;
-    }
-    // 5. Reset Trip (If both are full and user clicks a brand new 3rd gate)
-    setOriginGate(gateId);
-    setDestinationGate(null);
-  };
+  // === CALCULATE BEST EXIT GLOBALLY ===
+  const bestExit = getBestExit(gateData, selectedVehicle, selectedBuilding);
 
-  // Decide which gate to show in the GateDetails panel (Prioritize showing destination, otherwise origin)
-  const displayGateId = destinationGate || originGate;
+  const handleGateClick = (gateId) => {
+    setSelectedGate(prev => prev === gateId ? null : gateId);
+  };
 
   return (
     <ThemeProvider>
@@ -76,69 +55,85 @@ export default function App() {
             <TopHeader setIsSidebarOpen={setIsSidebarOpen} gateData={gateData} />
             <NotificationDrawer />
 
-            <main className="flex-1 overflow-y-auto p-0 md:p-6 lg:p-8 relative">
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative">
 
               {activeView === 'dashboard' && (
-                <div className="max-w-7xl mx-auto h-full flex flex-col lg:grid lg:grid-cols-12 gap-0 lg:gap-6 animate-in fade-in duration-300">
+                <div className="max-w-7xl mx-auto h-auto lg:h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 animate-in fade-in duration-300 pb-24 lg:pb-0">
 
                   {/* LEFT COLUMN: Map Widget */}
-                  <div className="flex-1 lg:col-span-8 min-h-[60vh] lg:min-h-0 relative z-0 flex flex-col gap-4">
+                  {/* FIX: Removed flex-1 and added an explicit height of h-[500px] for mobile */}
+                  <div className="w-full shrink-0 lg:col-span-8 h-[500px] lg:h-full relative z-0 flex flex-col">
                     <MapWidget
                       gateData={gateData}
-                      originGate={originGate}
-                      destinationGate={destinationGate}
+                      selectedGate={selectedGate}
                       handleGateClick={handleGateClick}
+                      bestExit={bestExit}
+                      selectedBuilding={selectedBuilding}
                       selectedVehicle={selectedVehicle}
                     />
                   </div>
 
-                  {/* DESKTOP RIGHT PANEL */}
-                  <div className="hidden lg:flex lg:col-span-4 flex-col gap-6">
-                    <GateControlPanel
-                      gateData={gateData}
-                      originGate={originGate}
-                      destinationGate={destinationGate}
-                      handleGateClick={handleGateClick}
+                  {/* RIGHT PANEL: Stacks under map on mobile, right column on desktop */}
+                  <div className="flex w-full shrink-0 lg:col-span-4 flex-col gap-4">
+
+                    {/* 1. Standalone Building Selector */}
+                    <BuildingSelector
+                      selectedBuilding={selectedBuilding}
+                      setSelectedBuilding={setSelectedBuilding}
                     />
 
-                    {gateData && displayGateId && gateData[displayGateId] && (
-                      <GateDetails
-                        currentGate={gateData[displayGateId]}
-                        selectedVehicle={selectedVehicle}
-                        setSelectedVehicle={setSelectedVehicle}
-                      />
-                    )}
+                    {/* 2. Compact Vehicle Selector for Global Exit Routing */}
+                    <CompactVehicleSelector
+                      selectedVehicle={selectedVehicle}
+                      setSelectedVehicle={setSelectedVehicle}
+                    />
+
+                    {/* 3. DYNAMIC PANEL (Desktop Only) */}
+                    <div className="hidden lg:block relative w-full h-[370px]">
+                      {gateData && selectedGate && gateData[selectedGate] ? (
+                        <div className="absolute inset-0 animate-in fade-in slide-in-from-right-4 duration-300">
+                          <GateDetails
+                            currentGate={gateData[selectedGate]}
+                            selectedVehicle={selectedVehicle}
+                            setSelectedVehicle={setSelectedVehicle}
+                            onBack={() => setSelectedGate(null)}
+                          />
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                          <GateControlPanel
+                            gateData={gateData}
+                            selectedGate={selectedGate}
+                            handleGateClick={handleGateClick}
+                            bestExit={bestExit}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* MOBILE BOTTOM SHEET */}
+                  {/* MOBILE BOTTOM SHEET (Sliding up over the screen) */}
                   <div
-                    className={`lg:hidden fixed inset-x-0 bottom-0 z-[1000] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${displayGateId ? 'translate-y-0' : 'translate-y-full'
+                    className={`lg:hidden fixed inset-x-0 bottom-0 z-[1000] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${selectedGate ? 'translate-y-0' : 'translate-y-full'
                       }`}
                   >
                     <div className="bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] border-t border-slate-200/50 dark:border-slate-700/50 p-5 pb-8 max-h-[85vh] overflow-y-auto">
                       <div className="flex justify-center items-center mb-6 relative">
                         <div
                           className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full cursor-pointer"
-                          onClick={() => {
-                            // Reset completely on close
-                            handleGateClick(originGate);
-                            if (destinationGate) handleGateClick(destinationGate);
-                          }}
+                          onClick={() => setSelectedGate(null)}
                         />
                         <button
-                          onClick={() => {
-                            setOriginGate(null);
-                            setDestinationGate(null);
-                          }}
+                          onClick={() => setSelectedGate(null)}
                           className="absolute right-0 p-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors rounded-full text-slate-500 dark:text-slate-400"
                         >
                           <X size={18} />
                         </button>
                       </div>
 
-                      {gateData && displayGateId && gateData[displayGateId] && (
+                      {gateData && selectedGate && gateData[selectedGate] && (
                         <GateDetails
-                          currentGate={gateData[displayGateId]}
+                          currentGate={gateData[selectedGate]}
                           selectedVehicle={selectedVehicle}
                           setSelectedVehicle={setSelectedVehicle}
                         />
