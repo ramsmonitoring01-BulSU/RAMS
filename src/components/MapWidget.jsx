@@ -42,7 +42,6 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
 
             <div className="flex-1 relative w-full z-0 bg-slate-50 dark:bg-slate-900">
 
-                {/* === EXISTING DESKTOP STATS PANEL === */}
                 <div className="hidden md:block absolute bottom-6 left-6 z-[1000] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl shadow-lg">
                     <h3 className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-wider mb-3">Gate Status</h3>
                     <div className="flex flex-col gap-2.5">
@@ -61,7 +60,6 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                     </div>
                 </div>
 
-                {/* === NEW MOBILE QUICK GLANCE OVERLAY === */}
                 <div className="md:hidden absolute bottom-4 left-0 right-0 w-full z-[1000] px-3 pointer-events-none">
                     <div className="flex gap-2 overflow-x-auto snap-x pb-2 pointer-events-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {gates.map(gate => {
@@ -107,20 +105,19 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                     </div>
                 </div>
 
-                {/* === MAP CONTAINER === */}
                 <div className="absolute inset-0">
                     <MapContainer center={mapCenter} zoom={16} minZoom={15} maxBounds={[southWest, northEast]} maxBoundsViscosity={0.8} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" maxNativeZoom={19} />
 
-                        {/* DRAW BUILDINGS */}
                         {mapBuildings.map(bldg => {
-                            const isSelected = selectedBuilding === bldg.properties.id;
+                            if (selectedBuilding !== bldg.properties.id) return null;
+
                             const [lng, lat] = bldg.geometry.coordinates;
 
                             const bldgHtml = `
-                                <div class="relative flex items-center justify-center pointer-events-none">
-                                    <div class="w-3 h-3 rounded-full ${isSelected ? 'bg-[#3B82F6] scale-150 shadow-lg shadow-blue-500/50 animate-pulse' : 'bg-slate-400 dark:bg-slate-600'} border-2 border-white dark:border-slate-800 transition-all duration-300"></div>
-                                    ${isSelected ? `<div class="absolute top-4 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-50">${bldg.properties.name}</div>` : ''}
+                                <div class="relative flex flex-col items-center justify-center pointer-events-none z-50">
+                                    <div class="w-4 h-4 rounded-full bg-[#3B82F6] shadow-lg shadow-blue-500/50 animate-pulse border-2 border-white dark:border-slate-800"></div>
+                                    <div class="absolute top-5 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1 rounded shadow-lg whitespace-nowrap">${bldg.properties.name}</div>
                                 </div>
                             `;
 
@@ -128,12 +125,11 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                                 <Marker
                                     key={bldg.properties.id}
                                     position={[lat, lng]}
-                                    icon={L.divIcon({ className: 'bg-transparent', html: bldgHtml, iconSize: [12, 12] })}
+                                    icon={L.divIcon({ className: 'bg-transparent', html: bldgHtml, iconSize: [16, 16] })}
                                 />
                             );
                         })}
 
-                        {/* DRAW CALCULATED ROUTE */}
                         {bestExit && bestExit.routeSegments && allRoutes.map(route => {
                             if (!bestExit.routeSegments.includes(route.properties.id)) return null;
 
@@ -152,7 +148,6 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                             );
                         })}
 
-                        {/* DRAW GATES */}
                         {gates.map(gate => {
                             if (!gate) return null;
 
@@ -168,13 +163,15 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                             const shouldPulse = isBestExit || gate.status !== 'Passable';
                             const pinScale = 1 + (Math.min(gate.level || 0, 60) / 100);
 
+                            const displayClass = isBestExit ? 'flex z-50' : 'hidden md:flex';
+
                             const combinedHtml = `
                                 <div class="relative flex items-center justify-center w-8 h-8 cursor-pointer group z-50">
                                     <div class="absolute inset-0 flex items-center justify-center transition-transform" style="transform: scale(${pinScale});">
                                         ${shouldPulse ? `<span class="absolute inline-flex h-full w-full rounded-full ${statusColorBg} opacity-50 animate-ping z-0"></span>` : ''}
                                         <span class="relative inline-flex rounded-full h-4 w-4 ${statusColorBg} border-2 border-white shadow-md z-10"></span>
                                     </div>
-                                    <div class="absolute left-8 ml-1 flex items-center shadow-lg rounded-full overflow-hidden border-2 ${isBestExit || isSelected ? `border-[${statusColorBg}] scale-110` : 'border-white'} w-max transition-transform">
+                                    <div class="absolute left-8 ml-1 ${displayClass} items-center shadow-lg rounded-full overflow-hidden border-2 ${isBestExit || isSelected ? `border-[${statusColorBg}] scale-110` : 'border-white'} w-max transition-transform">
                                         <div class="${isBestExit || isSelected ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'} px-2 py-1 text-[11px] font-bold tracking-wide flex items-center gap-1">
                                             ${isBestExit ? '★ BEST EXIT:' : ''} ${gate.name}
                                         </div>
