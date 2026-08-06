@@ -17,42 +17,44 @@ export default function GateDetails({ currentGate, selectedVehicle, setSelectedV
     }
 
     return (
-        <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 md:p-5 w-full h-full flex flex-col justify-between transition-colors duration-300">
+        // Height tightened to 340px. Reduced gap-6 to gap-4 so the elements fit the new height perfectly.
+        <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 md:p-5 w-full flex flex-col h-[340px] min-h-[340px] max-h-[340px] overflow-hidden gap-4 transition-colors duration-300">
 
-            {/* Header Row: Inline Back Button + Title & Location + Status Badge */}
-            <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
+            <div className="flex justify-between items-start shrink-0">
+                <div className="flex items-center gap-2.5">
                     {onBack && (
                         <button
                             onClick={onBack}
-                            className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shrink-0"
+                            className="p-1.5 md:p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shrink-0"
                             title="Back to Gates"
                         >
                             <ArrowLeft size={16} strokeWidth={2.5} />
                         </button>
                     )}
                     <div>
-                        <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white leading-snug">
+                        <h3 className="text-base md:text-lg font-display font-bold text-slate-900 dark:text-white leading-tight">
                             {currentGate.name}
                         </h3>
-                        <p className="text-sm font-sans text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
-                            <MapPin size={14} /> {currentGate.location}
+                        <p className="text-xs md:text-sm font-sans text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                            <MapPin size={12} md:size={14} /> {currentGate.location}
                         </p>
                     </div>
                 </div>
 
-                <div className={`px-3 py-1.5 rounded-md border flex items-center gap-2 font-sans text-sm font-bold tracking-wide shrink-0 ${statusTheme}`}>
-                    <StatusIcon size={16} />
+                <div className={`px-2 md:px-3 py-1 md:py-1.5 rounded-md border flex items-center gap-1.5 font-sans text-xs md:text-sm font-bold tracking-wide shrink-0 ${statusTheme}`}>
+                    <StatusIcon size={14} />
                     {currentGate.status}
                 </div>
             </div>
 
-            {/* Restored Animated Vehicle Clearance */}
-            <VehicleClearance
-                currentLevel={currentGate.level}
-                selectedVehicle={selectedVehicle}
-                setSelectedVehicle={setSelectedVehicle}
-            />
+            <div className="shrink-0">
+                <VehicleClearance
+                    currentLevel={currentGate.level}
+                    selectedVehicle={selectedVehicle}
+                    setSelectedVehicle={setSelectedVehicle}
+                />
+            </div>
+
         </div>
     );
 }

@@ -10,7 +10,7 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
 
     if (!gateData || !campusGeoJSON) {
         return (
-            <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[500px] h-full">
+            <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center w-full h-full min-h-[400px] lg:min-h-0">
                 <p className="text-slate-500 animate-pulse font-bold">Loading Map Data...</p>
             </div>
         );
@@ -29,7 +29,8 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
     const allRoutes = campusGeoJSON.features.filter(f => f.geometry.type === 'LineString');
 
     return (
-        <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col min-h-[500px] h-full">
+        <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col w-full h-full min-h-[400px] lg:min-h-0">
+
             <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-card-dark shrink-0 z-10">
                 <h2 className="text-base font-display font-medium text-slate-800 dark:text-white flex items-center gap-2">
                     <Map size={18} className="text-[#2563EB]" /> Live Navigation Map
@@ -39,9 +40,9 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                 </span>
             </div>
 
-            <div className="flex-1 relative w-full h-full z-0">
+            <div className="flex-1 relative w-full z-0 bg-slate-50 dark:bg-slate-900">
 
-                {/* Stats Panel */}
+                {/* === EXISTING DESKTOP STATS PANEL === */}
                 <div className="hidden md:block absolute bottom-6 left-6 z-[1000] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl shadow-lg">
                     <h3 className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-wider mb-3">Gate Status</h3>
                     <div className="flex flex-col gap-2.5">
@@ -60,92 +61,141 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                     </div>
                 </div>
 
-                <MapContainer center={mapCenter} zoom={16} minZoom={15} maxBounds={[southWest, northEast]} maxBoundsViscosity={0.8} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" maxNativeZoom={19} />
+                {/* === NEW MOBILE QUICK GLANCE OVERLAY === */}
+                <div className="md:hidden absolute bottom-4 left-0 right-0 w-full z-[1000] px-3 pointer-events-none">
+                    <div className="flex gap-2 overflow-x-auto snap-x pb-2 pointer-events-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        {gates.map(gate => {
+                            if (!gate) return null;
 
-                    {/* DRAW BUILDINGS */}
-                    {mapBuildings.map(bldg => {
-                        const isSelected = selectedBuilding === bldg.properties.id;
-                        const [lng, lat] = bldg.geometry.coordinates;
+                            let dotColor = 'bg-[#10B981]';
+                            let pulse = '';
+                            if (gate.status === 'Warning') {
+                                dotColor = 'bg-[#F59E0B]';
+                                pulse = 'animate-pulse';
+                            }
+                            if (gate.status === 'Impassable') {
+                                dotColor = 'bg-[#F43F5E]';
+                                pulse = 'animate-pulse';
+                            }
 
-                        const bldgHtml = `
-                            <div class="relative flex items-center justify-center pointer-events-none">
-                                <div class="w-3 h-3 rounded-full ${isSelected ? 'bg-[#3B82F6] scale-150 shadow-lg shadow-blue-500/50 animate-pulse' : 'bg-slate-400 dark:bg-slate-600'} border-2 border-white dark:border-slate-800 transition-all duration-300"></div>
-                                ${isSelected ? `<div class="absolute top-4 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-50">${bldg.properties.name}</div>` : ''}
-                            </div>
-                        `;
+                            const isSelected = selectedGate === gate.id;
+                            const borderStyle = isSelected
+                                ? 'border-[#2563EB] bg-blue-50/95 dark:bg-blue-900/40'
+                                : 'border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-800';
 
-                        return (
-                            <Marker
-                                key={bldg.properties.id}
-                                position={[lat, lng]}
-                                icon={L.divIcon({ className: 'bg-transparent', html: bldgHtml, iconSize: [12, 12] })}
-                            />
-                        );
-                    })}
-
-                    {/* DRAW CALCULATED ROUTE */}
-                    {bestExit && bestExit.routeSegments && allRoutes.map(route => {
-                        if (!bestExit.routeSegments.includes(route.properties.id)) return null;
-
-                        const leafletCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                        const lineColor = bestExit.isSafe ? "#10B981" : "#F97316";
-
-                        return (
-                            <Polyline
-                                key={route.properties.id}
-                                positions={leafletCoords}
-                                color={lineColor}
-                                weight={7}
-                                opacity={0.8}
-                                className="animate-pulse drop-shadow-md"
-                            />
-                        );
-                    })}
-
-                    {/* DRAW GATES */}
-                    {gates.map(gate => {
-                        if (!gate) return null;
-
-                        const isSelected = selectedGate === gate.id;
-                        const isBestExit = bestExit && bestExit.id === gate.id;
-                        let statusColorBg = 'bg-[#10B981]';
-
-                        if (gate.status === 'Warning') statusColorBg = 'bg-[#F59E0B]';
-                        else if (gate.status === 'Impassable') statusColorBg = 'bg-[#F43F5E]';
-
-                        if (isBestExit) statusColorBg = bestExit.isSafe ? 'bg-[#10B981]' : 'bg-[#F97316]';
-
-                        const shouldPulse = isBestExit || gate.status !== 'Passable';
-                        const pinScale = 1 + (Math.min(gate.level || 0, 60) / 100);
-
-                        const combinedHtml = `
-                            <div class="relative flex items-center justify-center w-8 h-8 cursor-pointer group z-50">
-                                <div class="absolute inset-0 flex items-center justify-center transition-transform" style="transform: scale(${pinScale});">
-                                    ${shouldPulse ? `<span class="absolute inline-flex h-full w-full rounded-full ${statusColorBg} opacity-50 animate-ping z-0"></span>` : ''}
-                                    <span class="relative inline-flex rounded-full h-4 w-4 ${statusColorBg} border-2 border-white shadow-md z-10"></span>
-                                </div>
-                                <div class="absolute left-8 ml-1 flex items-center shadow-lg rounded-full overflow-hidden border-2 ${isBestExit || isSelected ? `border-[${statusColorBg}] scale-110` : 'border-white'} w-max transition-transform">
-                                    <div class="${isBestExit || isSelected ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'} px-2 py-1 text-[11px] font-bold tracking-wide flex items-center gap-1">
-                                        ${isBestExit ? '★ BEST EXIT:' : ''} ${gate.name}
+                            return (
+                                <button
+                                    key={gate.id}
+                                    onClick={() => handleGateClick(gate.id)}
+                                    className={`flex-none snap-center backdrop-blur-md border rounded-xl px-3 py-2 shadow-lg flex flex-col items-start min-w-[90px] transition-all duration-200 ${borderStyle}`}
+                                >
+                                    <div className="flex justify-between w-full items-center mb-1">
+                                        <span className={`text-[10px] font-sans font-bold uppercase tracking-wide ${isSelected ? 'text-[#2563EB]' : 'text-slate-500 dark:text-slate-400'}`}>
+                                            {gate.name}
+                                        </span>
+                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor} ${pulse}`}></span>
                                     </div>
-                                    <div class="${statusColorBg} text-white px-2 py-1 text-[11px] font-mono font-bold">
-                                        ${gate.level}cm
+                                    <div className="flex items-baseline gap-0.5">
+                                        <span className="text-lg font-mono font-bold text-slate-800 dark:text-white leading-none">
+                                            {gate.level}
+                                        </span>
+                                        <span className="text-[9px] font-sans text-slate-500 dark:text-slate-400">cm</span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* === MAP CONTAINER === */}
+                <div className="absolute inset-0">
+                    <MapContainer center={mapCenter} zoom={16} minZoom={15} maxBounds={[southWest, northEast]} maxBoundsViscosity={0.8} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+                        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" maxNativeZoom={19} />
+
+                        {/* DRAW BUILDINGS */}
+                        {mapBuildings.map(bldg => {
+                            const isSelected = selectedBuilding === bldg.properties.id;
+                            const [lng, lat] = bldg.geometry.coordinates;
+
+                            const bldgHtml = `
+                                <div class="relative flex items-center justify-center pointer-events-none">
+                                    <div class="w-3 h-3 rounded-full ${isSelected ? 'bg-[#3B82F6] scale-150 shadow-lg shadow-blue-500/50 animate-pulse' : 'bg-slate-400 dark:bg-slate-600'} border-2 border-white dark:border-slate-800 transition-all duration-300"></div>
+                                    ${isSelected ? `<div class="absolute top-4 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-50">${bldg.properties.name}</div>` : ''}
+                                </div>
+                            `;
+
+                            return (
+                                <Marker
+                                    key={bldg.properties.id}
+                                    position={[lat, lng]}
+                                    icon={L.divIcon({ className: 'bg-transparent', html: bldgHtml, iconSize: [12, 12] })}
+                                />
+                            );
+                        })}
+
+                        {/* DRAW CALCULATED ROUTE */}
+                        {bestExit && bestExit.routeSegments && allRoutes.map(route => {
+                            if (!bestExit.routeSegments.includes(route.properties.id)) return null;
+
+                            const leafletCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                            const lineColor = bestExit.isSafe ? "#10B981" : "#F97316";
+
+                            return (
+                                <Polyline
+                                    key={route.properties.id}
+                                    positions={leafletCoords}
+                                    color={lineColor}
+                                    weight={7}
+                                    opacity={0.8}
+                                    className="animate-pulse drop-shadow-md"
+                                />
+                            );
+                        })}
+
+                        {/* DRAW GATES */}
+                        {gates.map(gate => {
+                            if (!gate) return null;
+
+                            const isSelected = selectedGate === gate.id;
+                            const isBestExit = bestExit && bestExit.id === gate.id;
+                            let statusColorBg = 'bg-[#10B981]';
+
+                            if (gate.status === 'Warning') statusColorBg = 'bg-[#F59E0B]';
+                            else if (gate.status === 'Impassable') statusColorBg = 'bg-[#F43F5E]';
+
+                            if (isBestExit) statusColorBg = bestExit.isSafe ? 'bg-[#10B981]' : 'bg-[#F97316]';
+
+                            const shouldPulse = isBestExit || gate.status !== 'Passable';
+                            const pinScale = 1 + (Math.min(gate.level || 0, 60) / 100);
+
+                            const combinedHtml = `
+                                <div class="relative flex items-center justify-center w-8 h-8 cursor-pointer group z-50">
+                                    <div class="absolute inset-0 flex items-center justify-center transition-transform" style="transform: scale(${pinScale});">
+                                        ${shouldPulse ? `<span class="absolute inline-flex h-full w-full rounded-full ${statusColorBg} opacity-50 animate-ping z-0"></span>` : ''}
+                                        <span class="relative inline-flex rounded-full h-4 w-4 ${statusColorBg} border-2 border-white shadow-md z-10"></span>
+                                    </div>
+                                    <div class="absolute left-8 ml-1 flex items-center shadow-lg rounded-full overflow-hidden border-2 ${isBestExit || isSelected ? `border-[${statusColorBg}] scale-110` : 'border-white'} w-max transition-transform">
+                                        <div class="${isBestExit || isSelected ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'} px-2 py-1 text-[11px] font-bold tracking-wide flex items-center gap-1">
+                                            ${isBestExit ? '★ BEST EXIT:' : ''} ${gate.name}
+                                        </div>
+                                        <div class="${statusColorBg} text-white px-2 py-1 text-[11px] font-mono font-bold">
+                                            ${gate.level}cm
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
 
-                        return (
-                            <Marker
-                                key={gate.id}
-                                position={[gate.lat, gate.lng]}
-                                icon={L.divIcon({ className: 'bg-transparent border-none outline-none', html: combinedHtml, iconSize: [32, 32], iconAnchor: [16, 16] })}
-                                eventHandlers={{ click: () => handleGateClick(gate.id) }}
-                            />
-                        );
-                    })}
-                </MapContainer>
+                            return (
+                                <Marker
+                                    key={gate.id}
+                                    position={[gate.lat, gate.lng]}
+                                    icon={L.divIcon({ className: 'bg-transparent border-none outline-none', html: combinedHtml, iconSize: [32, 32], iconAnchor: [16, 16] })}
+                                    eventHandlers={{ click: () => handleGateClick(gate.id) }}
+                                />
+                            );
+                        })}
+                    </MapContainer>
+                </div>
             </div>
         </div>
     );

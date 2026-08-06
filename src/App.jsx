@@ -58,19 +58,20 @@ export default function App() {
             <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative">
 
               {activeView === 'dashboard' && (
-                <div className="max-w-7xl mx-auto h-auto lg:h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 animate-in fade-in duration-300 pb-24 lg:pb-0">
+                <div className="max-w-7xl mx-auto h-auto flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 animate-in fade-in duration-300 pb-24 lg:pb-0 items-stretch">
 
                   {/* LEFT COLUMN: Map Widget */}
-                  {/* FIX: Removed flex-1 and added an explicit height of h-[500px] for mobile */}
-                  <div className="w-full shrink-0 lg:col-span-8 h-[500px] lg:h-full relative z-0 flex flex-col">
-                    <MapWidget
-                      gateData={gateData}
-                      selectedGate={selectedGate}
-                      handleGateClick={handleGateClick}
-                      bestExit={bestExit}
-                      selectedBuilding={selectedBuilding}
-                      selectedVehicle={selectedVehicle}
-                    />
+                  <div className="w-full shrink-0 lg:col-span-8 h-[500px] lg:h-auto relative z-0">
+                    <div className="absolute inset-0">
+                      <MapWidget
+                        gateData={gateData}
+                        selectedGate={selectedGate}
+                        handleGateClick={handleGateClick}
+                        bestExit={bestExit}
+                        selectedBuilding={selectedBuilding}
+                        selectedVehicle={selectedVehicle}
+                      />
+                    </div>
                   </div>
 
                   {/* RIGHT PANEL: Stacks under map on mobile, right column on desktop */}
@@ -89,7 +90,7 @@ export default function App() {
                     />
 
                     {/* 3. DYNAMIC PANEL (Desktop Only) */}
-                    <div className="hidden lg:block relative w-full h-[370px]">
+                    <div className="hidden lg:block relative w-full h-[340px]">
                       {gateData && selectedGate && gateData[selectedGate] ? (
                         <div className="absolute inset-0 animate-in fade-in slide-in-from-right-4 duration-300">
                           <GateDetails
