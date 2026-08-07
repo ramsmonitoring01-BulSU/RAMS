@@ -2,7 +2,7 @@
 
 export const CAMPUS_BUILDINGS = [
     { id: "CON", name: "Pimentel Hall (CON)" },
-    { id: "activity-center", name: "Activity Center" },
+    { id: "activity-center", name: "Activity Center (AC)" },
     { id: "CIT", name: "Alvarado Hall (CIT)" },
     { id: "NSTP", name: "Athletes Bldg (NSTP)" },
     { id: "CLAW", name: "College of Law" },
