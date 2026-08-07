@@ -11,7 +11,7 @@ export const CAMPUS_BUILDINGS = [
     { id: "elibrary", name: "E-Library" },
     { id: "CBEA", name: "CBEA Bldg" },
     { id: "COE", name: "Natividad Hall (COE)" },
-    { id: "COED", name: "Pimentel Hall (COED)" },
+    { id: "COED", name: "Roxas Hall (COED)" },
     { id: "CHTM", name: "CHTM Bldg" },
     { id: "CS-CAL", name: "Federizo Hall (CS-CAL)" },
     { id: "floreshall", name: "Flores Hall" },
