@@ -23,30 +23,49 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
     const [isLocating, setIsLocating] = useState(false);
     const [locateTrigger, setLocateTrigger] = useState(null);
 
-    // Handle GPS Button Click
-    const handleFindMe = () => {
+    // State to manage the active GPS tracking stream
+    const [watchId, setWatchId] = useState(null);
+
+    // Ensure GPS turns off if the user closes the dashboard or navigates away
+    useEffect(() => {
+        return () => {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+        };
+    }, [watchId]);
+
+    // Toggle Live GPS Tracking
+    const toggleTracking = () => {
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by your browser");
             return;
         }
 
-        setIsLocating(true);
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const { latitude, longitude, accuracy } = pos.coords;
-                const newCoords = [latitude, longitude];
-                setUserPosition(newCoords);
-                setUserAccuracy(accuracy);
-                setLocateTrigger(newCoords); // Triggers flyTo in LocationController
-                setIsLocating(false);
-            },
-            (err) => {
-                console.error("Error getting location: ", err.message);
-                alert("Unable to retrieve your location. Please check permissions.");
-                setIsLocating(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+        if (watchId) {
+            // Stop Tracking
+            navigator.geolocation.clearWatch(watchId);
+            setWatchId(null);
+            setUserPosition(null); // Removes the blue dot from the map
+        } else {
+            // Start Tracking
+            setIsLocating(true);
+            const id = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    const newCoords = [latitude, longitude];
+                    setUserPosition(newCoords);
+                    setUserAccuracy(accuracy);
+                    setLocateTrigger(newCoords); // Centers map on every movement
+                    setIsLocating(false);
+                },
+                (err) => {
+                    console.error("Error getting location: ", err.message);
+                    if (err.code === 1) alert("Please allow location permissions to use this feature.");
+                    setIsLocating(false);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+            setWatchId(id);
+        }
     };
 
     if (!gateData || !campusGeoJSON) {
@@ -73,7 +92,7 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
     const userIcon = L.divIcon({
         className: 'bg-transparent',
         html: `
-            <div class="relative flex items-center justify-center w-6 h-6">
+            <div class="relative flex items-center justify-center w-6 h-6 z-50">
                 <span class="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-ping"></span>
                 <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-blue-600 border-2 border-white shadow-md"></span>
             </div>
@@ -98,15 +117,18 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
 
                 {/* TOP-RIGHT GPS TARGET BUTTON */}
                 <button
-                    onClick={handleFindMe}
-                    disabled={isLocating}
-                    title="Find My Location"
-                    className="absolute top-4 right-4 z-[1000] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 p-2.5 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 transition-all duration-200 flex items-center justify-center cursor-pointer group"
+                    onClick={toggleTracking}
+                    title={watchId ? "Stop Live Tracking" : "Start Live Tracking"}
+                    className={`absolute top-4 right-4 z-[1000] p-2.5 rounded-xl shadow-lg border transition-all duration-200 flex items-center justify-center cursor-pointer group
+                        ${watchId
+                            ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-500 shadow-blue-500/20'
+                            : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                        }`}
                 >
                     {isLocating ? (
                         <Loader2 size={20} className="text-blue-500 animate-spin" />
                     ) : (
-                        <Crosshair size={20} className="text-slate-600 dark:text-slate-300 group-hover:text-blue-500 transition-colors" />
+                        <Crosshair size={20} className={`${watchId ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 group-hover:text-blue-500'} transition-colors`} />
                     )}
                 </button>
 
