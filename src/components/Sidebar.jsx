@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import {
-    LayoutDashboard, DoorOpen, History, Download,
+    LayoutDashboard, DoorOpen, Download,
     ChevronLeft, ChevronRight, RefreshCw
 } from 'lucide-react';
 // 1. Import Supabase to fetch the export data
@@ -139,12 +139,6 @@ export default function Sidebar({
                             <DoorOpen size={20} className="min-w-[20px]" />
                             <span className={`text-sm whitespace-nowrap ${isDesktopCollapsed ? 'hidden' : 'block'}`}>Nodes</span>
                         </button>
-                    </li>
-                    <li>
-                        <a href="#" className={`flex items-center gap-3 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white rounded-xl px-3 py-3 transition-all font-sans font-medium ${isDesktopCollapsed ? 'justify-center' : ''}`}>
-                            <History size={20} className="min-w-[20px]" />
-                            <span className={`text-sm whitespace-nowrap ${isDesktopCollapsed ? 'hidden' : 'block'}`}>History</span>
-                        </a>
                     </li>
                 </ul>
 
