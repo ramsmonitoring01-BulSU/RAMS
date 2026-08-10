@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import {
     LayoutDashboard, DoorOpen, History, Download,
-    Activity, X, ChevronLeft, ChevronRight, RefreshCw
+    ChevronLeft, ChevronRight, RefreshCw
 } from 'lucide-react';
 // 1. Import Supabase to fetch the export data
 import { supabase } from '../supabaseClient';
@@ -93,9 +93,17 @@ export default function Sidebar({
 
                 {/* BRANDING & LOGO SECTION */}
                 <div className={`flex items-center h-20 px-4 md:px-6 mb-4 border-b border-slate-100 dark:border-slate-700 transition-colors ${isDesktopCollapsed ? 'justify-center' : 'justify-between md:justify-start gap-3'}`}>
-                    <div className="w-10 h-10 min-w-[40px] rounded-lg bg-blue-100 dark:bg-brand-dark/30 flex items-center justify-center text-[#2563EB] dark:text-brand-light transition-colors">
-                        <Activity size={24} strokeWidth={2.5} />
+
+                    {/* NEW RAMS LOGO WRAPPER */}
+                    <div className="bg-white p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm shrink-0 flex items-center justify-center w-10 h-10 min-w-[40px]">
+                        <img
+                            src="/RAMS-LOGO.png"
+                            alt="RAMS Logo"
+                            className="w-full h-full object-contain"
+                        />
                     </div>
+
+                    {/* ORIGINAL SMARTECH TEXT */}
                     <div className={`overflow-hidden transition-all whitespace-nowrap ${isDesktopCollapsed ? 'hidden' : 'block'}`}>
                         <h1 className="text-lg font-display font-bold tracking-tight text-slate-900 dark:text-white" title="Resiliency Energy and Continuity">
                             SmarTech
@@ -104,9 +112,6 @@ export default function Sidebar({
                             IOT System
                         </p>
                     </div>
-                    <button className="md:hidden ml-auto text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" onClick={() => setIsSidebarOpen(false)}>
-                        <X size={24} />
-                    </button>
                 </div>
 
                 {/* NAVIGATION LINKS */}
@@ -115,8 +120,8 @@ export default function Sidebar({
                         <button
                             onClick={() => { setActiveView('dashboard'); setIsSidebarOpen(false); }}
                             className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 transition-all font-sans ${activeView === 'dashboard'
-                                    ? 'bg-blue-50 dark:bg-brand-dark/20 text-[#2563EB] dark:text-brand-light font-semibold'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white font-medium'
+                                ? 'bg-blue-50 dark:bg-brand-dark/20 text-[#2563EB] dark:text-brand-light font-semibold'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white font-medium'
                                 } ${isDesktopCollapsed ? 'justify-center' : ''}`}
                         >
                             <LayoutDashboard size={20} className="min-w-[20px]" />
@@ -127,8 +132,8 @@ export default function Sidebar({
                         <button
                             onClick={() => { setActiveView('nodes'); setIsSidebarOpen(false); }}
                             className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 transition-all font-sans ${activeView === 'nodes'
-                                    ? 'bg-blue-50 dark:bg-brand-dark/20 text-[#2563EB] dark:text-brand-light font-semibold'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white font-medium'
+                                ? 'bg-blue-50 dark:bg-brand-dark/20 text-[#2563EB] dark:text-brand-light font-semibold'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white font-medium'
                                 } ${isDesktopCollapsed ? 'justify-center' : ''}`}
                         >
                             <DoorOpen size={20} className="min-w-[20px]" />
