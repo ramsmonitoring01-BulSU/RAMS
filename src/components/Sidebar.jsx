@@ -92,7 +92,7 @@ export default function Sidebar({
       `}>
 
                 {/* BRANDING & LOGO SECTION */}
-                <div className={`flex items-center h-20 px-4 md:px-6 mb-4 border-b border-slate-100 dark:border-slate-700 transition-colors ${isDesktopCollapsed ? 'justify-center' : 'justify-between md:justify-start gap-3'}`}>
+                <div className={`flex items-center h-20 px-4 md:px-6 mb-4 border-b border-slate-100 dark:border-slate-700 transition-colors ${isDesktopCollapsed ? 'justify-center' : 'justify-start gap-3'}`}>
 
                     {/* NEW RAMS LOGO WRAPPER */}
                     <div className="bg-white p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm shrink-0 flex items-center justify-center w-10 h-10 min-w-[40px]">
