@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 🚨 DIAGNOSTIC CHECK: Are these undefined?
+// For testing the connection of supabase
 console.log("🔍 Checking Env Vars:");
 console.log("URL:", supabaseUrl ? "✅ Loaded" : "❌ UNDEFINED");
 console.log("Key:", supabaseAnonKey ? "✅ Loaded" : "❌ UNDEFINED");

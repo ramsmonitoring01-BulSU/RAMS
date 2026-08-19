@@ -1,4 +1,4 @@
-// utils/routeCalculator.js
+// Smart routing feature, kasama yung mini-algorithm for path finding
 
 export function findBestRoute(origin, destination, selectedVehicle, vehicleThresholds, gateData, campusRoutes) {
     if (!origin || !destination || !selectedVehicle) return [];

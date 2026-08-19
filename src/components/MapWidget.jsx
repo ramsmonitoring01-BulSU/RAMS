@@ -1,4 +1,4 @@
-// components/MapWidget.jsx
+// Map widget plus the GPS button
 import React, { useState, useEffect } from 'react';
 import { Map, ShieldAlert, ShieldCheck, Shield, Crosshair, Loader2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Polyline, Circle, useMap } from 'react-leaflet';

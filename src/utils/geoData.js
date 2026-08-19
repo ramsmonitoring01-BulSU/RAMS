@@ -1,4 +1,5 @@
-// utils/geoData.js
+// Dito indicated yung location ng points for the buildings (latitude and longitude)
+// Pati yung sa segments nung map included din 
 export const campusGeoJSON = {
     "type": "FeatureCollection",
     "features": [

@@ -1,3 +1,5 @@
+// Vehicle clearance component, kasama yung wave-like animation
+
 import React from 'react';
 import { User, Car, Bike, Zap } from 'lucide-react';
 

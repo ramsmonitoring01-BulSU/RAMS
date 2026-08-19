@@ -1,4 +1,4 @@
-// utils/buildings.js
+// Pangalan ng bldgs for the dropdown menu
 
 export const CAMPUS_BUILDINGS = [
     { id: "CON", name: "Pimentel Hall (CON)" },

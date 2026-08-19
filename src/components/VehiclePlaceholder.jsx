@@ -1,5 +1,5 @@
 // ============================================================================
-// COMPONENT: Vehicle Placeholder
+// COMPONENT: Vehicle Placeholder [for testing]
 // PURPOSE: Displays a single rectangular box indicating if a vehicle can cross.
 // It automatically turns GREEN (Pass) or RED (Stop) based on the water level.
 // ============================================================================

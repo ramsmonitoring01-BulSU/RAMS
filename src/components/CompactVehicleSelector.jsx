@@ -1,3 +1,5 @@
+// Vehicle selector
+
 import React from 'react';
 import { User, Car, Bike, Zap } from 'lucide-react';
 

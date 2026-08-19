@@ -17,7 +17,6 @@ export default function GateDetails({ currentGate, selectedVehicle, setSelectedV
     }
 
     return (
-        // Height tightened to 340px. Reduced gap-6 to gap-4 so the elements fit the new height perfectly.
         <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-4 md:p-5 w-full flex flex-col h-[340px] min-h-[340px] max-h-[340px] overflow-hidden gap-4 transition-colors duration-300">
 
             <div className="flex justify-between items-start shrink-0">

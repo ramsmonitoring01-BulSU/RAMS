@@ -1,8 +1,9 @@
+//Dropdown menu for the bldg selector
+
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { CAMPUS_BUILDINGS } from '../utils/buildings';
 
-// NOTICE the "export default" right here!
 export default function BuildingSelector({ selectedBuilding, setSelectedBuilding }) {
     return (
         <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm w-full transition-colors duration-300">

@@ -5,7 +5,6 @@ export default function GateControlPanel({ gateData, originGate, destinationGate
     const gateNumbers = [1, 2, 3, 4];
 
     return (
-        // Height tightened from 380px down to 340px
         <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 p-4 md:p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-colors duration-300 w-full h-[340px] min-h-[340px] max-h-[340px] overflow-hidden flex flex-col">
 
             <h3 className="text-[10px] font-sans font-bold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-wider shrink-0">

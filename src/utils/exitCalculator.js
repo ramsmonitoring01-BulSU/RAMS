@@ -1,4 +1,4 @@
-// utils/exitCalculator.js
+// Best exit calculator based on the parameters [vehicle type & Water level sa gates]
 import { campusGeoJSON } from './geoData';
 
 // Helper to calculate physical distance between coordinates [lng, lat]
