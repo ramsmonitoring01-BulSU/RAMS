@@ -5,7 +5,7 @@ import { User, Car, Bike, Zap } from 'lucide-react';
 
 export default function VehicleClearance({ currentLevel, selectedVehicle, setSelectedVehicle }) {
     const vehicles = [
-        { id: 'human', label: 'Human', icon: User, threshold: 30, maxVisualHeight: 155 },
+        { id: 'human', label: 'Human', icon: User, threshold: 30, maxVisualHeight: 135 },
         { id: 'ebike', label: 'E-Bike', icon: Zap, threshold: 10, maxVisualHeight: 140 },
         { id: 'motorbike', label: 'Motorbike', icon: Bike, threshold: 20, maxVisualHeight: 90 },
         { id: 'sedan', label: 'Sedan', icon: Car, threshold: 15, maxVisualHeight: 85 },
