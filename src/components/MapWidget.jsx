@@ -186,7 +186,7 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
 
                 <div className="absolute inset-0">
                     <MapContainer center={mapCenter} zoom={16} minZoom={15} maxBounds={[southWest, northEast]} maxBoundsViscosity={0.8} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"attribution='Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012' />
+                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}" attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ' />
 
                         {/* Handles smooth panning to user GPS location */}
                         <LocationController targetPosition={locateTrigger} />
