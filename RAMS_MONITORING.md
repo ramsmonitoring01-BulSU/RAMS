@@ -58,6 +58,16 @@ Custom Dijkstra's Algorithm implementation (rerouting decision)*
 
 
 
+
+
+#### **Google Apps Script**
+
+**DEPLOYMENT ID:** AKfycbybrsz62YwmYyj8y7MeVBMB5DcXyCJOdf9\_5Of91NPg3nELZhRK3\_dpgXi01XIyYFVr
+
+**WEB URL:** https://script.google.com/macros/s/AKfycbybrsz62YwmYyj8y7MeVBMB5DcXyCJOdf9\_5Of91NPg3nELZhRK3\_dpgXi01XIyYFVr/exec
+
+
+
 ======================================================================================================
 
 

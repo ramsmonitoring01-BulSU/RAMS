@@ -1,10 +1,91 @@
-// Map widget plus the GPS button
-import React, { useState, useEffect } from 'react';
-import { Map, ShieldAlert, ShieldCheck, Shield, Crosshair, Loader2 } from 'lucide-react';
+// Map widget plus the GPS button & Dynamic Research Thresholds
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    Map,
+    ShieldAlert,
+    ShieldCheck,
+    Shield,
+    Crosshair,
+    Loader2,
+    SlidersHorizontal,
+    RotateCcw,
+    X,
+    Waves
+} from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Polyline, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { campusGeoJSON } from '../utils/geoData';
+
+// ============================================================================
+// DEFAULT FLOOD THRESHOLDS (modifiable via UI or props for research)
+// ============================================================================
+export const DEFAULT_THRESHOLDS = {
+    noWater: 2.0,       // <= 2 cm: No Water (Dry road conditions)
+    passableAll: 20.0,  // 2.1 - 20 cm: Gutter-deep (~8 in); Passable to all vehicles
+    notLight: 45.0      // 20.1 - 45 cm: Knee-deep (~18 in); Impassable to light vehicles
+    // > 45 cm: Impassable to all vehicles
+};
+
+// 4-Tier Color Mapping Theme
+export const getStatusTheme = (statusKey) => {
+    switch (statusKey) {
+        case 'no_water':
+            return {
+                id: 'no_water',
+                label: 'No Water',
+                shortLabel: 'No Water',
+                bg: 'bg-[#10B981]',
+                hex: '#10B981',
+                border: 'border-[#10B981]',
+                text: 'text-[#10B981]',
+                pulse: false
+            };
+        case 'passable_all':
+            return {
+                id: 'passable_all',
+                label: 'Passable to all vehicles',
+                shortLabel: 'Passable (All)',
+                bg: 'bg-[#EAB308]',
+                hex: '#EAB308',
+                border: 'border-[#EAB308]',
+                text: 'text-[#EAB308]',
+                pulse: false
+            };
+        case 'not_light':
+            return {
+                id: 'not_light',
+                label: 'Not passable to light vehicles',
+                shortLabel: 'Not Passable (Light)',
+                bg: 'bg-[#F97316]',
+                hex: '#F97316',
+                border: 'border-[#F97316]',
+                text: 'text-[#F97316]',
+                pulse: true
+            };
+        case 'impassable':
+        default:
+            return {
+                id: 'impassable',
+                label: 'Impassable to all vehicles',
+                shortLabel: 'Impassable (All)',
+                bg: 'bg-[#F43F5E]',
+                hex: '#F43F5E',
+                border: 'border-[#F43F5E]',
+                text: 'text-[#F43F5E]',
+                pulse: true
+            };
+    }
+};
+
+// Evaluates raw centimeter reading against active research thresholds
+export const evaluateGateStatus = (level, thresholds = DEFAULT_THRESHOLDS) => {
+    const depth = Number(level) || 0;
+    if (depth <= thresholds.noWater) return 'no_water';
+    if (depth <= thresholds.passableAll) return 'passable_all';
+    if (depth <= thresholds.notLight) return 'not_light';
+    return 'impassable';
+};
 
 // Helper component to handle map pan/zoom actions via Leaflet instance
 function LocationController({ targetPosition }) {
@@ -17,23 +98,53 @@ function LocationController({ targetPosition }) {
     return null;
 }
 
-export default function MapWidget({ gateData, selectedGate, handleGateClick, bestExit, selectedBuilding, selectedVehicle }) {
+export default function MapWidget({
+    gateData,
+    selectedGate,
+    handleGateClick,
+    bestExit,
+    selectedBuilding,
+    selectedVehicle,
+    customThresholds,
+    onThresholdChange
+}) {
     const [userPosition, setUserPosition] = useState(null);
     const [userAccuracy, setUserAccuracy] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
     const [locateTrigger, setLocateTrigger] = useState(null);
-
-    // State to manage the active GPS tracking stream
     const [watchId, setWatchId] = useState(null);
 
-    // Ensure GPS turns off if the user closes the dashboard or navigates away
+    // Research thresholds state
+    const [thresholds, setThresholds] = useState(customThresholds || DEFAULT_THRESHOLDS);
+    const [showConfig, setShowConfig] = useState(false);
+
+    useEffect(() => {
+        if (customThresholds) {
+            setThresholds(customThresholds);
+        }
+    }, [customThresholds]);
+
+    const handleThresholdUpdate = (field, value) => {
+        const updated = {
+            ...thresholds,
+            [field]: parseFloat(value) || 0
+        };
+        setThresholds(updated);
+        if (onThresholdChange) onThresholdChange(updated);
+    };
+
+    const handleResetThresholds = () => {
+        setThresholds(DEFAULT_THRESHOLDS);
+        if (onThresholdChange) onThresholdChange(DEFAULT_THRESHOLDS);
+    };
+
+    // Geolocation teardown
     useEffect(() => {
         return () => {
             if (watchId) navigator.geolocation.clearWatch(watchId);
         };
     }, [watchId]);
 
-    // Toggle Live GPS Tracking
     const toggleTracking = () => {
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by your browser");
@@ -41,12 +152,10 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
         }
 
         if (watchId) {
-            // Stop Tracking
             navigator.geolocation.clearWatch(watchId);
             setWatchId(null);
-            setUserPosition(null); // Removes the blue dot from the map
+            setUserPosition(null);
         } else {
-            // Start Tracking
             setIsLocating(true);
             const id = navigator.geolocation.watchPosition(
                 (pos) => {
@@ -54,7 +163,7 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                     const newCoords = [latitude, longitude];
                     setUserPosition(newCoords);
                     setUserAccuracy(accuracy);
-                    setLocateTrigger(newCoords); // Centers map on every movement
+                    setLocateTrigger(newCoords);
                     setIsLocating(false);
                 },
                 (err) => {
@@ -68,6 +177,21 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
         }
     };
 
+    // Dynamically evaluate all gate nodes based on research thresholds
+    const processedGates = useMemo(() => {
+        if (!gateData) return [];
+        return Object.values(gateData).map(gate => {
+            if (!gate) return null;
+            const statusKey = evaluateGateStatus(gate.level, thresholds);
+            const theme = getStatusTheme(statusKey);
+            return {
+                ...gate,
+                evaluatedStatus: statusKey,
+                theme
+            };
+        }).filter(Boolean);
+    }, [gateData, thresholds]);
+
     if (!gateData || !campusGeoJSON) {
         return (
             <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center w-full h-full min-h-[400px] lg:min-h-0">
@@ -80,15 +204,15 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
     const southWest = [14.8450, 120.8000];
     const northEast = [14.8680, 120.8280];
 
-    const gates = Object.values(gateData);
-    const impassableCount = gates.filter(g => g?.status === 'Impassable').length;
-    const warningCount = gates.filter(g => g?.status === 'Warning').length;
-    const safeCount = gates.length - impassableCount - warningCount;
+    // Status counts for legend
+    const noWaterCount = processedGates.filter(g => g.evaluatedStatus === 'no_water').length;
+    const passableAllCount = processedGates.filter(g => g.evaluatedStatus === 'passable_all').length;
+    const notLightCount = processedGates.filter(g => g.evaluatedStatus === 'not_light').length;
+    const impassableCount = processedGates.filter(g => g.evaluatedStatus === 'impassable').length;
 
     const mapBuildings = campusGeoJSON.features.filter(f => f.geometry.type === 'Point');
     const allRoutes = campusGeoJSON.features.filter(f => f.geometry.type === 'LineString');
 
-    // User GPS Marker Icon
     const userIcon = L.divIcon({
         className: 'bg-transparent',
         html: `
@@ -104,16 +228,110 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
     return (
         <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col w-full h-full min-h-[400px] lg:min-h-0">
 
+            {/* TOP BAR WITH RESEARCH CONTROLS */}
             <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-card-dark shrink-0 z-10">
-                <h2 className="text-base font-display font-medium text-slate-800 dark:text-white flex items-center gap-2">
-                    <Map size={18} className="text-[#2563EB]" /> Live Navigation Map
-                </h2>
-                <span className="bg-emerald-50 dark:bg-emerald-900/20 text-[#10B981] dark:text-emerald-400 text-[10px] font-sans font-bold px-2 py-1 rounded-md flex items-center gap-1.5 border border-emerald-100 dark:border-emerald-800/50 uppercase tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span> Live
-                </span>
+                <div className="flex items-center gap-2">
+                    <h2 className="text-base font-display font-medium text-slate-800 dark:text-white flex items-center gap-2">
+                        <Map size={18} className="text-[#2563EB]" /> Live Navigation Map
+                    </h2>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {/* Research Threshold Toggle */}
+                    <button
+                        onClick={() => setShowConfig(!showConfig)}
+                        title="Adjust Research Thresholds"
+                        className={`text-xs px-2.5 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition-all ${showConfig
+                                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400'
+                                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                            }`}
+                    >
+                        <SlidersHorizontal size={13} />
+                        <span className="hidden sm:inline">Research Config</span>
+                    </button>
+
+                    <span className="bg-emerald-50 dark:bg-emerald-900/20 text-[#10B981] dark:text-emerald-400 text-[10px] font-sans font-bold px-2 py-1 rounded-md flex items-center gap-1.5 border border-emerald-100 dark:border-emerald-800/50 uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span> Live
+                    </span>
+                </div>
             </div>
 
             <div className="flex-1 relative w-full z-0 bg-slate-50 dark:bg-slate-900">
+
+                {/* FLOATING RESEARCH THRESHOLD CONFIGURATION MODAL */}
+                {showConfig && (
+                    <div className="absolute top-4 left-4 z-[1001] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 p-4 rounded-xl shadow-xl w-72 transition-all">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-3">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                                <Waves size={14} className="text-indigo-500" /> Depth Thresholds (cm)
+                            </div>
+                            <button
+                                onClick={() => setShowConfig(false)}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col gap-2.5 text-xs">
+                            <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
+                                    <span className="w-2 h-2 rounded-full bg-[#10B981]"></span> No Water (&le;)
+                                </span>
+                                <input
+                                    type="number"
+                                    step="0.5"
+                                    min="0"
+                                    value={thresholds.noWater}
+                                    onChange={(e) => handleThresholdUpdate('noWater', e.target.value)}
+                                    className="w-16 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-right font-mono font-bold text-slate-700 dark:text-slate-200"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
+                                    <span className="w-2 h-2 rounded-full bg-[#EAB308]"></span> Passable All (&le;)
+                                </span>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    min={thresholds.noWater}
+                                    value={thresholds.passableAll}
+                                    onChange={(e) => handleThresholdUpdate('passableAll', e.target.value)}
+                                    className="w-16 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-right font-mono font-bold text-slate-700 dark:text-slate-200"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
+                                    <span className="w-2 h-2 rounded-full bg-[#F97316]"></span> Not Light (&le;)
+                                </span>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    min={thresholds.passableAll}
+                                    value={thresholds.notLight}
+                                    onChange={(e) => handleThresholdUpdate('notLight', e.target.value)}
+                                    className="w-16 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-right font-mono font-bold text-slate-700 dark:text-slate-200"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between text-slate-400 dark:text-slate-500 pt-1 text-[11px]">
+                                <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-[#F43F5E]"></span> Impassable All
+                                </span>
+                                <span className="font-mono">&gt; {thresholds.notLight} cm</span>
+                            </div>
+
+                            <button
+                                onClick={handleResetThresholds}
+                                className="mt-2 flex items-center justify-center gap-1.5 text-[11px] py-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                            >
+                                <RotateCcw size={11} /> Reset Defaults
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* TOP-RIGHT GPS TARGET BUTTON */}
                 <button
@@ -132,21 +350,33 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                     )}
                 </button>
 
-                {/* Gate Status Legend (Desktop) */}
+                {/* 4-Tier Gate Status Legend (Desktop) */}
                 <div className="hidden md:block absolute bottom-6 left-6 z-[1000] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl shadow-lg">
-                    <h3 className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-wider mb-3">Gate Status</h3>
-                    <div className="flex flex-col gap-2.5">
-                        <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
-                            <span className="flex gap-2"><ShieldCheck size={14} className="text-[#10B981]" /> Passable</span>
-                            <span className="font-mono font-bold pr-2">{safeCount}</span>
+                    <h3 className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-wider mb-2.5">Gate Status</h3>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300 gap-4">
+                            <span className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span> No Water
+                            </span>
+                            <span className="font-mono font-bold">{noWaterCount}</span>
                         </div>
-                        <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
-                            <span className="flex gap-2"><Shield size={14} className="text-[#F59E0B]" /> Warning</span>
-                            <span className="font-mono font-bold pr-2">{warningCount}</span>
+                        <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300 gap-4">
+                            <span className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#EAB308]"></span> Passable (All)
+                            </span>
+                            <span className="font-mono font-bold">{passableAllCount}</span>
                         </div>
-                        <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
-                            <span className="flex gap-2"><ShieldAlert size={14} className="text-[#F43F5E] animate-pulse" /> Closed</span>
-                            <span className="font-mono font-bold text-[#F43F5E] pr-2">{impassableCount}</span>
+                        <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300 gap-4">
+                            <span className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#F97316]"></span> Not Passable (Light)
+                            </span>
+                            <span className="font-mono font-bold">{notLightCount}</span>
+                        </div>
+                        <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300 gap-4">
+                            <span className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#F43F5E] animate-pulse"></span> Impassable (All)
+                            </span>
+                            <span className="font-mono font-bold text-[#F43F5E]">{impassableCount}</span>
                         </div>
                     </div>
                 </div>
@@ -154,15 +384,15 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                 {/* Mobile Gate Carousel */}
                 <div className="md:hidden absolute bottom-4 left-0 right-0 w-full z-[1000] px-3 pointer-events-none">
                     <div className="flex gap-2 overflow-x-auto snap-x pb-2 pointer-events-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        {gates.map(gate => {
+                        {processedGates.map(gate => {
                             if (!gate) return null;
-                            let dotColor = 'bg-[#10B981]';
-                            let pulse = '';
-                            if (gate.status === 'Warning') { dotColor = 'bg-[#F59E0B]'; pulse = 'animate-pulse'; }
-                            if (gate.status === 'Impassable') { dotColor = 'bg-[#F43F5E]'; pulse = 'animate-pulse'; }
+                            const dotColor = gate.theme.bg;
+                            const pulse = gate.theme.pulse ? 'animate-pulse' : '';
 
                             const isSelected = selectedGate === gate.id;
-                            const borderStyle = isSelected ? 'border-[#2563EB] bg-blue-50/95 dark:bg-blue-900/40' : 'border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/90';
+                            const borderStyle = isSelected
+                                ? 'border-[#2563EB] bg-blue-50/95 dark:bg-blue-900/40'
+                                : 'border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/90';
 
                             return (
                                 <button
@@ -171,11 +401,15 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                                     className={`flex-none snap-center backdrop-blur-md border rounded-xl px-3 py-2 shadow-lg flex flex-col items-start min-w-[90px] transition-all duration-200 ${borderStyle}`}
                                 >
                                     <div className="flex justify-between w-full items-center mb-1">
-                                        <span className={`text-[10px] font-sans font-bold uppercase tracking-wide ${isSelected ? 'text-[#2563EB]' : 'text-slate-500'}`}>{gate.name}</span>
+                                        <span className={`text-[10px] font-sans font-bold uppercase tracking-wide ${isSelected ? 'text-[#2563EB]' : 'text-slate-500'}`}>
+                                            {gate.name}
+                                        </span>
                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor} ${pulse}`}></span>
                                     </div>
                                     <div className="flex items-baseline gap-0.5">
-                                        <span className="text-lg font-mono font-bold text-slate-800 dark:text-white leading-none">{gate.level}</span>
+                                        <span className="text-lg font-mono font-bold text-slate-800 dark:text-white leading-none">
+                                            {gate.level}
+                                        </span>
                                         <span className="text-[9px] font-sans text-slate-500">cm</span>
                                     </div>
                                 </button>
@@ -185,8 +419,19 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                 </div>
 
                 <div className="absolute inset-0">
-                    <MapContainer center={mapCenter} zoom={16} minZoom={15} maxBounds={[southWest, northEast]} maxBoundsViscosity={0.8} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+                    <MapContainer
+                        center={mapCenter}
+                        zoom={16}
+                        minZoom={15}
+                        maxBounds={[southWest, northEast]}
+                        maxBoundsViscosity={0.8}
+                        style={{ height: '100%', width: '100%' }}
+                        zoomControl={false}
+                    >
+                        <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        />
 
                         {/* Handles smooth panning to user GPS location */}
                         <LocationController targetPosition={locateTrigger} />
@@ -226,7 +471,7 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                             const leafletCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
 
                             let lineColor = "#3B82F6";
-                            if (bestExit.routeStatus === 'warning') lineColor = "#F59E0B";
+                            if (bestExit.routeStatus === 'warning') lineColor = "#F97316";
                             if (bestExit.routeStatus === 'impassable') lineColor = "#F43F5E";
 
                             return (
@@ -241,22 +486,19 @@ export default function MapWidget({ gateData, selectedGate, handleGateClick, bes
                             );
                         })}
 
-                        {gates.map(gate => {
+                        {processedGates.map(gate => {
                             if (!gate) return null;
                             const isSelected = selectedGate === gate.id;
                             const isBestExit = bestExit && bestExit.id === gate.id;
-                            let statusColorBg = 'bg-[#10B981]';
-
-                            if (gate.status === 'Warning') statusColorBg = 'bg-[#F59E0B]';
-                            else if (gate.status === 'Impassable') statusColorBg = 'bg-[#F43F5E]';
+                            let statusColorBg = gate.theme.bg;
 
                             if (isBestExit) {
                                 if (bestExit.routeStatus === 'safe') statusColorBg = 'bg-[#3B82F6]';
-                                else if (bestExit.routeStatus === 'warning') statusColorBg = 'bg-[#F59E0B]';
+                                else if (bestExit.routeStatus === 'warning') statusColorBg = 'bg-[#F97316]';
                                 else if (bestExit.routeStatus === 'impassable') statusColorBg = 'bg-[#F43F5E]';
                             }
 
-                            const shouldPulse = isBestExit || gate.status !== 'Passable';
+                            const shouldPulse = isBestExit || gate.theme.pulse;
                             const pinScale = 1 + (Math.min(gate.level || 0, 60) / 100);
                             const displayClass = isBestExit ? 'flex z-50' : 'hidden md:flex';
 
