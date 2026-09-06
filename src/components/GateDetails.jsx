@@ -5,7 +5,7 @@ import VehicleClearance from './VehicleClearance';
 const DEFAULT_THRESHOLDS = {
     noWater: 2.0,       // <= 2 cm: No Water
     passableAll: 25.0,  // 2.1 - 20 cm: Passable to all vehicles
-    notLight: 41.0      // 20.1 - 45 cm: Not passable to light vehicles
+    notLight: 41.0      // 20.1 - 66 cm: Not passable to light vehicles
     // > 66 cm: Impassable to all vehicles
 };
 
