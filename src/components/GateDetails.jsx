@@ -5,8 +5,8 @@ import VehicleClearance from './VehicleClearance';
 const DEFAULT_THRESHOLDS = {
     noWater: 2.0,       // <= 2 cm: No Water
     passableAll: 25.0,  // 2.1 - 25 cm: Passable to all vehicles
-    notLight: 41.0      // 25.1 - 41 cm: Not passable to light vehicles
-    // > 41.1 cm: Impassable to all vehicles
+    notLight: 48.0      // 25.1 - 48 cm: Not passable to light vehicles
+    // > 48.1 cm: Impassable to all vehicles
 };
 
 const getGateStatusDetails = (level, status, thresholds = DEFAULT_THRESHOLDS) => {
