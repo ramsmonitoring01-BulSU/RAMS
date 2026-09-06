@@ -22,9 +22,9 @@ import { campusGeoJSON } from '../utils/geoData';
 // ============================================================================
 export const DEFAULT_THRESHOLDS = {
     noWater: 2.0,       // <= 2 cm: No Water (Dry road conditions)
-    passableAll: 20.0,  // 2.1 - 20 cm: Gutter-deep (~8 in); Passable to all vehicles
-    notLight: 45.0      // 20.1 - 45 cm: Knee-deep (~18 in); Impassable to light vehicles
-    // > 45 cm: Impassable to all vehicles
+    passableAll: 25.0,  // 2.1 - 20 cm: Gutter-deep (~8 in); Passable to all vehicles
+    notLight: 41.0      // 20.1 - 66 cm: Knee-deep (~18 in); Impassable to light vehicles
+    // > 66 cm: Impassable to all vehicles
 };
 
 // 4-Tier Color Mapping Theme
@@ -201,7 +201,7 @@ export default function MapWidget({
     }
 
     const mapCenter = [14.857917, 120.813817];
-    const southWest = [14.8450, 120.8000];
+    const southWest = [14.8660, 120.8000];
     const northEast = [14.8680, 120.8280];
 
     // Status counts for legend
