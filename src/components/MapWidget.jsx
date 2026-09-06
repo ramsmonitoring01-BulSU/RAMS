@@ -22,9 +22,9 @@ import { campusGeoJSON } from '../utils/geoData';
 // ============================================================================
 export const DEFAULT_THRESHOLDS = {
     noWater: 2.0,       // <= 2 cm: No Water (Dry road conditions)
-    passableAll: 25.0,  // 2.1 - 20 cm: Gutter-deep (~8 in); Passable to all vehicles
-    notLight: 41.0      // 20.1 - 66 cm: Knee-deep (~18 in); Impassable to light vehicles
-    // > 66 cm: Impassable to all vehicles
+    passableAll: 25.0,  // 2.1 - 25 cm: Gutter-deep (~8 in); Passable to all vehicles
+    notLight: 41.0      // 25.1 - 41 cm: Knee-deep (~18 in); Impassable to light vehicles
+    // > 41.1 cm: Impassable to all vehicles
 };
 
 // 4-Tier Color Mapping Theme
