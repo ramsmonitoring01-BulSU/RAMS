@@ -1,5 +1,5 @@
 // Map widget plus the GPS button & Dynamic Research Thresholds
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     Map,
     ShieldAlert,
@@ -22,9 +22,8 @@ import { campusGeoJSON } from '../utils/geoData';
 // ============================================================================
 export const DEFAULT_THRESHOLDS = {
     noWater: 2.0,       // <= 2 cm: No Water (Dry road conditions)
-    passableAll: 20.0,  // 2.1 - 20 cm: Gutter-deep (~8 in); Passable to all vehicles
-    notLight: 45.0      // 20.1 - 45 cm: Knee-deep (~18 in); Impassable to light vehicles
-    // > 45 cm: Impassable to all vehicles
+    passableAll: 20.0,  // 2.1 - 20 cm: Gutter-deep; Passable to all vehicles
+    notLight: 45.0      // 20.1 - 45 cm: Knee-deep; Impassable to light vehicles
 };
 
 // 4-Tier Color Mapping Theme
@@ -78,7 +77,6 @@ export const getStatusTheme = (statusKey) => {
     }
 };
 
-// Evaluates raw centimeter reading against active research thresholds
 export const evaluateGateStatus = (level, thresholds = DEFAULT_THRESHOLDS) => {
     const depth = Number(level) || 0;
     if (depth <= thresholds.noWater) return 'no_water';
@@ -87,14 +85,52 @@ export const evaluateGateStatus = (level, thresholds = DEFAULT_THRESHOLDS) => {
     return 'impassable';
 };
 
-// Helper component to handle map pan/zoom actions via Leaflet instance
-function LocationController({ targetPosition }) {
+// Controller handling dynamic centering, gate selection pan, and container resizing
+function MapBoundsController({ targetPosition, selectedGatePos, gates }) {
     const map = useMap();
+    const hasFittedInitialBounds = useRef(false);
+
+    // Invalidate container size on mount to eliminate flexbox sizing offset
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [map]);
+
+    // Auto-fit bounds on initial load so all gates are centered and visible
+    useEffect(() => {
+        if (!hasFittedInitialBounds.current && gates && gates.length > 0) {
+            const validCoords = gates
+                .filter(g => g?.lat && g?.lng)
+                .map(g => [g.lat, g.lng]);
+
+            if (validCoords.length > 0) {
+                const bounds = L.latLngBounds(validCoords);
+                map.fitBounds(bounds, {
+                    padding: [60, 60],
+                    maxZoom: 16,
+                    animate: false
+                });
+                hasFittedInitialBounds.current = true;
+            }
+        }
+    }, [gates, map]);
+
+    // Smoothly focus when a specific gate is selected
+    useEffect(() => {
+        if (selectedGatePos) {
+            map.flyTo(selectedGatePos, 17, { animate: true, duration: 1 });
+        }
+    }, [selectedGatePos, map]);
+
+    // Re-center on live GPS coordinate updates
     useEffect(() => {
         if (targetPosition) {
             map.flyTo(targetPosition, 17, { animate: true });
         }
     }, [targetPosition, map]);
+
     return null;
 }
 
@@ -114,7 +150,6 @@ export default function MapWidget({
     const [locateTrigger, setLocateTrigger] = useState(null);
     const [watchId, setWatchId] = useState(null);
 
-    // Research thresholds state
     const [thresholds, setThresholds] = useState(customThresholds || DEFAULT_THRESHOLDS);
     const [showConfig, setShowConfig] = useState(false);
 
@@ -138,7 +173,6 @@ export default function MapWidget({
         if (onThresholdChange) onThresholdChange(DEFAULT_THRESHOLDS);
     };
 
-    // Geolocation teardown
     useEffect(() => {
         return () => {
             if (watchId) navigator.geolocation.clearWatch(watchId);
@@ -177,7 +211,6 @@ export default function MapWidget({
         }
     };
 
-    // Dynamically evaluate all gate nodes based on research thresholds
     const processedGates = useMemo(() => {
         if (!gateData) return [];
         return Object.values(gateData).map(gate => {
@@ -192,6 +225,24 @@ export default function MapWidget({
         }).filter(Boolean);
     }, [gateData, thresholds]);
 
+    // Calculate dynamic centroid of all active gates for default center
+    const dynamicCenter = useMemo(() => {
+        if (processedGates.length === 0) return [14.857917, 120.813817];
+        const valid = processedGates.filter(g => g.lat && g.lng);
+        if (valid.length === 0) return [14.857917, 120.813817];
+
+        const sumLat = valid.reduce((acc, g) => acc + g.lat, 0);
+        const sumLng = valid.reduce((acc, g) => acc + g.lng, 0);
+        return [sumLat / valid.length, sumLng / valid.length];
+    }, [processedGates]);
+
+    // Position of currently selected gate (if any)
+    const selectedGatePos = useMemo(() => {
+        if (!selectedGate || !gateData) return null;
+        const gate = gateData[selectedGate];
+        return gate && gate.lat && gate.lng ? [gate.lat, gate.lng] : null;
+    }, [selectedGate, gateData]);
+
     if (!gateData || !campusGeoJSON) {
         return (
             <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center w-full h-full min-h-[400px] lg:min-h-0">
@@ -200,11 +251,10 @@ export default function MapWidget({
         );
     }
 
-    const mapCenter = [14.857917, 120.813817];
-    const southWest = [14.8450, 120.8000];
-    const northEast = [14.8680, 120.8280];
+    // Extended bounding boundaries to prevent edge-clamping during pan
+    const southWest = [14.8300, 120.7850];
+    const northEast = [14.8850, 120.8450];
 
-    // Status counts for legend
     const noWaterCount = processedGates.filter(g => g.evaluatedStatus === 'no_water').length;
     const passableAllCount = processedGates.filter(g => g.evaluatedStatus === 'passable_all').length;
     const notLightCount = processedGates.filter(g => g.evaluatedStatus === 'not_light').length;
@@ -228,7 +278,7 @@ export default function MapWidget({
     return (
         <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex flex-col w-full h-full min-h-[400px] lg:min-h-0">
 
-            {/* TOP BAR WITH RESEARCH CONTROLS */}
+            {/* TOP BAR */}
             <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-card-dark shrink-0 z-10">
                 <div className="flex items-center gap-2">
                     <h2 className="text-base font-display font-medium text-slate-800 dark:text-white flex items-center gap-2">
@@ -237,7 +287,6 @@ export default function MapWidget({
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* Research Threshold Toggle */}
                     <button
                         onClick={() => setShowConfig(!showConfig)}
                         title="Adjust Research Thresholds"
@@ -258,7 +307,7 @@ export default function MapWidget({
 
             <div className="flex-1 relative w-full z-0 bg-slate-50 dark:bg-slate-900">
 
-                {/* FLOATING RESEARCH THRESHOLD CONFIGURATION MODAL */}
+                {/* RESEARCH CONFIG MODAL */}
                 {showConfig && (
                     <div className="absolute top-4 left-4 z-[1001] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 p-4 rounded-xl shadow-xl w-72 transition-all">
                         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-3">
@@ -333,7 +382,7 @@ export default function MapWidget({
                     </div>
                 )}
 
-                {/* TOP-RIGHT GPS TARGET BUTTON */}
+                {/* GPS TARGET BUTTON */}
                 <button
                     onClick={toggleTracking}
                     title={watchId ? "Stop Live Tracking" : "Start Live Tracking"}
@@ -350,7 +399,7 @@ export default function MapWidget({
                     )}
                 </button>
 
-                {/* 4-Tier Gate Status Legend (Desktop) */}
+                {/* DESKTOP STATUS LEGEND */}
                 <div className="hidden md:block absolute bottom-6 left-6 z-[1000] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl shadow-lg">
                     <h3 className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-wider mb-2.5">Gate Status</h3>
                     <div className="flex flex-col gap-2">
@@ -381,7 +430,7 @@ export default function MapWidget({
                     </div>
                 </div>
 
-                {/* Mobile Gate Carousel */}
+                {/* MOBILE GATE CAROUSEL */}
                 <div className="md:hidden absolute bottom-4 left-0 right-0 w-full z-[1000] px-3 pointer-events-none">
                     <div className="flex gap-2 overflow-x-auto snap-x pb-2 pointer-events-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {processedGates.map(gate => {
@@ -420,11 +469,11 @@ export default function MapWidget({
 
                 <div className="absolute inset-0">
                     <MapContainer
-                        center={mapCenter}
+                        center={dynamicCenter}
                         zoom={16}
-                        minZoom={15}
+                        minZoom={14}
                         maxBounds={[southWest, northEast]}
-                        maxBoundsViscosity={0.8}
+                        maxBoundsViscosity={0.5}
                         style={{ height: '100%', width: '100%' }}
                         zoomControl={false}
                     >
@@ -433,10 +482,14 @@ export default function MapWidget({
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         />
 
-                        {/* Handles smooth panning to user GPS location */}
-                        <LocationController targetPosition={locateTrigger} />
+                        {/* Automatic Centering, FitBounds, and Selection Controller */}
+                        <MapBoundsController
+                            targetPosition={locateTrigger}
+                            selectedGatePos={selectedGatePos}
+                            gates={processedGates}
+                        />
 
-                        {/* User GPS Marker & Accuracy Radius */}
+                        {/* User GPS Marker */}
                         {userPosition && (
                             <>
                                 <Marker position={userPosition} icon={userIcon} />
